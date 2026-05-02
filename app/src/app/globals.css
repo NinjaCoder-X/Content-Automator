@@ -1,0 +1,189 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #0a0b14;
+  color: #e6e9f5;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  border-color: #1f2235;
+}
+
+@layer components {
+  .glass {
+    background: linear-gradient(
+      180deg,
+      rgba(22, 24, 39, 0.65),
+      rgba(17, 19, 31, 0.55)
+    );
+    border: 1px solid rgba(124, 92, 255, 0.16);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .card {
+    background: rgba(17, 19, 31, 0.85);
+    border: 1px solid #1f2235;
+    border-radius: 16px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 10px;
+    padding: 0.55rem 1rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition:
+      transform 120ms ease,
+      background 120ms ease,
+      border-color 120ms ease,
+      box-shadow 200ms ease;
+    border: 1px solid transparent;
+    user-select: none;
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #7c5cff, #6440ff);
+    color: white;
+    box-shadow: 0 8px 24px rgba(124, 92, 255, 0.35);
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 30px rgba(124, 92, 255, 0.5);
+  }
+  .btn-secondary {
+    background: rgba(124, 92, 255, 0.08);
+    color: #e6e9f5;
+    border-color: rgba(124, 92, 255, 0.25);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: rgba(124, 92, 255, 0.15);
+  }
+  .btn-ghost {
+    color: #b6bbd6;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: rgba(124, 92, 255, 0.06);
+    color: white;
+  }
+
+  .input {
+    width: 100%;
+    background: rgba(10, 11, 20, 0.7);
+    border: 1px solid #1f2235;
+    border-radius: 10px;
+    padding: 0.6rem 0.85rem;
+    color: #e6e9f5;
+    transition:
+      border-color 120ms ease,
+      box-shadow 120ms ease;
+    font-size: 0.95rem;
+  }
+  .input:focus {
+    outline: none;
+    border-color: #7c5cff;
+    box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.2);
+  }
+  .input::placeholder {
+    color: #5b6080;
+  }
+
+  .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #b6bbd6;
+    font-weight: 500;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(124, 92, 255, 0.12);
+    color: #c8b9ff;
+    border: 1px solid rgba(124, 92, 255, 0.2);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .progress {
+    position: relative;
+    height: 8px;
+    background: rgba(124, 92, 255, 0.1);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress > span {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, #7c5cff, #22d3ee);
+    border-radius: 999px;
+    transition: width 200ms ease;
+  }
+}
+
+/* Subtle global texture */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(
+      ellipse 800px 400px at 20% -5%,
+      rgba(124, 92, 255, 0.18),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 600px 300px at 90% 10%,
+      rgba(34, 211, 238, 0.12),
+      transparent 60%
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+main,
+.app-shell {
+  position: relative;
+  z-index: 1;
+}
+
+.animate-pop {
+  animation: pop 320ms cubic-bezier(0.2, 0.8, 0.2, 1.2) both;
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
