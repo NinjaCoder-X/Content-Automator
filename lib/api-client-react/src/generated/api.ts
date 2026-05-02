@@ -5,18 +5,40 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  ActivityItem,
+  ContentStats,
+  CreateScriptBody,
+  CreateTopicBody,
+  CreateVideoBody,
+  GenerateMetadataBody,
+  GenerateScriptBody,
+  GenerateTopicsBody,
+  HealthStatus,
+  ListScriptsParams,
+  ListTopicsParams,
+  ListVideosParams,
+  Script,
+  Topic,
+  UpdateScriptBody,
+  UpdateVideoBody,
+  Video,
+  VideoMetadata,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +121,1632 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List all generated topics
+ */
+export const getListTopicsUrl = (params?: ListTopicsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/content/topics?${stringifiedParams}`
+    : `/api/content/topics`;
+};
+
+export const listTopics = async (
+  params?: ListTopicsParams,
+  options?: RequestInit,
+): Promise<Topic[]> => {
+  return customFetch<Topic[]>(getListTopicsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListTopicsQueryKey = (params?: ListTopicsParams) => {
+  return [`/api/content/topics`, ...(params ? [params] : [])] as const;
+};
+
+export const getListTopicsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listTopics>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListTopicsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listTopics>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListTopicsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listTopics>>> = ({
+    signal,
+  }) => listTopics(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listTopics>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListTopicsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listTopics>>
+>;
+export type ListTopicsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all generated topics
+ */
+
+export function useListTopics<
+  TData = Awaited<ReturnType<typeof listTopics>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListTopicsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listTopics>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListTopicsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a topic manually
+ */
+export const getCreateTopicUrl = () => {
+  return `/api/content/topics`;
+};
+
+export const createTopic = async (
+  createTopicBody: CreateTopicBody,
+  options?: RequestInit,
+): Promise<Topic> => {
+  return customFetch<Topic>(getCreateTopicUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createTopicBody),
+  });
+};
+
+export const getCreateTopicMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createTopic>>,
+    TError,
+    { data: BodyType<CreateTopicBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createTopic>>,
+  TError,
+  { data: BodyType<CreateTopicBody> },
+  TContext
+> => {
+  const mutationKey = ["createTopic"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createTopic>>,
+    { data: BodyType<CreateTopicBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createTopic(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateTopicMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createTopic>>
+>;
+export type CreateTopicMutationBody = BodyType<CreateTopicBody>;
+export type CreateTopicMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a topic manually
+ */
+export const useCreateTopic = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createTopic>>,
+    TError,
+    { data: BodyType<CreateTopicBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createTopic>>,
+  TError,
+  { data: BodyType<CreateTopicBody> },
+  TContext
+> => {
+  return useMutation(getCreateTopicMutationOptions(options));
+};
+
+/**
+ * @summary Get a topic by ID
+ */
+export const getGetTopicUrl = (id: number) => {
+  return `/api/content/topics/${id}`;
+};
+
+export const getTopic = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Topic> => {
+  return customFetch<Topic>(getGetTopicUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTopicQueryKey = (id: number) => {
+  return [`/api/content/topics/${id}`] as const;
+};
+
+export const getGetTopicQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTopic>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTopic>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetTopicQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTopic>>> = ({
+    signal,
+  }) => getTopic(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getTopic>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetTopicQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTopic>>
+>;
+export type GetTopicQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a topic by ID
+ */
+
+export function useGetTopic<
+  TData = Awaited<ReturnType<typeof getTopic>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTopic>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTopicQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Delete a topic
+ */
+export const getDeleteTopicUrl = (id: number) => {
+  return `/api/content/topics/${id}`;
+};
+
+export const deleteTopic = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteTopicUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteTopicMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTopic>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteTopic>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteTopic"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteTopic>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteTopic(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteTopicMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteTopic>>
+>;
+
+export type DeleteTopicMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a topic
+ */
+export const useDeleteTopic = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTopic>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteTopic>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteTopicMutationOptions(options));
+};
+
+/**
+ * @summary List all scripts
+ */
+export const getListScriptsUrl = (params?: ListScriptsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/content/scripts?${stringifiedParams}`
+    : `/api/content/scripts`;
+};
+
+export const listScripts = async (
+  params?: ListScriptsParams,
+  options?: RequestInit,
+): Promise<Script[]> => {
+  return customFetch<Script[]>(getListScriptsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListScriptsQueryKey = (params?: ListScriptsParams) => {
+  return [`/api/content/scripts`, ...(params ? [params] : [])] as const;
+};
+
+export const getListScriptsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listScripts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListScriptsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listScripts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListScriptsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listScripts>>> = ({
+    signal,
+  }) => listScripts(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listScripts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListScriptsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listScripts>>
+>;
+export type ListScriptsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all scripts
+ */
+
+export function useListScripts<
+  TData = Awaited<ReturnType<typeof listScripts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListScriptsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listScripts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListScriptsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a script manually
+ */
+export const getCreateScriptUrl = () => {
+  return `/api/content/scripts`;
+};
+
+export const createScript = async (
+  createScriptBody: CreateScriptBody,
+  options?: RequestInit,
+): Promise<Script> => {
+  return customFetch<Script>(getCreateScriptUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createScriptBody),
+  });
+};
+
+export const getCreateScriptMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createScript>>,
+    TError,
+    { data: BodyType<CreateScriptBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createScript>>,
+  TError,
+  { data: BodyType<CreateScriptBody> },
+  TContext
+> => {
+  const mutationKey = ["createScript"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createScript>>,
+    { data: BodyType<CreateScriptBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createScript(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateScriptMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createScript>>
+>;
+export type CreateScriptMutationBody = BodyType<CreateScriptBody>;
+export type CreateScriptMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a script manually
+ */
+export const useCreateScript = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createScript>>,
+    TError,
+    { data: BodyType<CreateScriptBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createScript>>,
+  TError,
+  { data: BodyType<CreateScriptBody> },
+  TContext
+> => {
+  return useMutation(getCreateScriptMutationOptions(options));
+};
+
+/**
+ * @summary Get a script by ID
+ */
+export const getGetScriptUrl = (id: number) => {
+  return `/api/content/scripts/${id}`;
+};
+
+export const getScript = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Script> => {
+  return customFetch<Script>(getGetScriptUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetScriptQueryKey = (id: number) => {
+  return [`/api/content/scripts/${id}`] as const;
+};
+
+export const getGetScriptQueryOptions = <
+  TData = Awaited<ReturnType<typeof getScript>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getScript>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetScriptQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getScript>>> = ({
+    signal,
+  }) => getScript(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getScript>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetScriptQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getScript>>
+>;
+export type GetScriptQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a script by ID
+ */
+
+export function useGetScript<
+  TData = Awaited<ReturnType<typeof getScript>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getScript>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetScriptQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update a script
+ */
+export const getUpdateScriptUrl = (id: number) => {
+  return `/api/content/scripts/${id}`;
+};
+
+export const updateScript = async (
+  id: number,
+  updateScriptBody: UpdateScriptBody,
+  options?: RequestInit,
+): Promise<Script> => {
+  return customFetch<Script>(getUpdateScriptUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateScriptBody),
+  });
+};
+
+export const getUpdateScriptMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateScript>>,
+    TError,
+    { id: number; data: BodyType<UpdateScriptBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateScript>>,
+  TError,
+  { id: number; data: BodyType<UpdateScriptBody> },
+  TContext
+> => {
+  const mutationKey = ["updateScript"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateScript>>,
+    { id: number; data: BodyType<UpdateScriptBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateScript(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateScriptMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateScript>>
+>;
+export type UpdateScriptMutationBody = BodyType<UpdateScriptBody>;
+export type UpdateScriptMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a script
+ */
+export const useUpdateScript = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateScript>>,
+    TError,
+    { id: number; data: BodyType<UpdateScriptBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateScript>>,
+  TError,
+  { id: number; data: BodyType<UpdateScriptBody> },
+  TContext
+> => {
+  return useMutation(getUpdateScriptMutationOptions(options));
+};
+
+/**
+ * @summary Delete a script
+ */
+export const getDeleteScriptUrl = (id: number) => {
+  return `/api/content/scripts/${id}`;
+};
+
+export const deleteScript = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteScriptUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteScriptMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteScript>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteScript>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteScript"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteScript>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteScript(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteScriptMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteScript>>
+>;
+
+export type DeleteScriptMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a script
+ */
+export const useDeleteScript = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteScript>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteScript>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteScriptMutationOptions(options));
+};
+
+/**
+ * @summary List all video records
+ */
+export const getListVideosUrl = (params?: ListVideosParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/content/videos?${stringifiedParams}`
+    : `/api/content/videos`;
+};
+
+export const listVideos = async (
+  params?: ListVideosParams,
+  options?: RequestInit,
+): Promise<Video[]> => {
+  return customFetch<Video[]>(getListVideosUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListVideosQueryKey = (params?: ListVideosParams) => {
+  return [`/api/content/videos`, ...(params ? [params] : [])] as const;
+};
+
+export const getListVideosQueryOptions = <
+  TData = Awaited<ReturnType<typeof listVideos>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListVideosParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listVideos>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListVideosQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listVideos>>> = ({
+    signal,
+  }) => listVideos(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listVideos>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListVideosQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listVideos>>
+>;
+export type ListVideosQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all video records
+ */
+
+export function useListVideos<
+  TData = Awaited<ReturnType<typeof listVideos>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListVideosParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listVideos>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListVideosQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a video record from a script
+ */
+export const getCreateVideoUrl = () => {
+  return `/api/content/videos`;
+};
+
+export const createVideo = async (
+  createVideoBody: CreateVideoBody,
+  options?: RequestInit,
+): Promise<Video> => {
+  return customFetch<Video>(getCreateVideoUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createVideoBody),
+  });
+};
+
+export const getCreateVideoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVideo>>,
+    TError,
+    { data: BodyType<CreateVideoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createVideo>>,
+  TError,
+  { data: BodyType<CreateVideoBody> },
+  TContext
+> => {
+  const mutationKey = ["createVideo"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createVideo>>,
+    { data: BodyType<CreateVideoBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createVideo(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateVideoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createVideo>>
+>;
+export type CreateVideoMutationBody = BodyType<CreateVideoBody>;
+export type CreateVideoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a video record from a script
+ */
+export const useCreateVideo = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVideo>>,
+    TError,
+    { data: BodyType<CreateVideoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createVideo>>,
+  TError,
+  { data: BodyType<CreateVideoBody> },
+  TContext
+> => {
+  return useMutation(getCreateVideoMutationOptions(options));
+};
+
+/**
+ * @summary Get a video record by ID
+ */
+export const getGetVideoUrl = (id: number) => {
+  return `/api/content/videos/${id}`;
+};
+
+export const getVideo = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Video> => {
+  return customFetch<Video>(getGetVideoUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetVideoQueryKey = (id: number) => {
+  return [`/api/content/videos/${id}`] as const;
+};
+
+export const getGetVideoQueryOptions = <
+  TData = Awaited<ReturnType<typeof getVideo>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getVideo>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetVideoQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getVideo>>> = ({
+    signal,
+  }) => getVideo(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getVideo>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetVideoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getVideo>>
+>;
+export type GetVideoQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a video record by ID
+ */
+
+export function useGetVideo<
+  TData = Awaited<ReturnType<typeof getVideo>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getVideo>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetVideoQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update a video record
+ */
+export const getUpdateVideoUrl = (id: number) => {
+  return `/api/content/videos/${id}`;
+};
+
+export const updateVideo = async (
+  id: number,
+  updateVideoBody: UpdateVideoBody,
+  options?: RequestInit,
+): Promise<Video> => {
+  return customFetch<Video>(getUpdateVideoUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateVideoBody),
+  });
+};
+
+export const getUpdateVideoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateVideo>>,
+    TError,
+    { id: number; data: BodyType<UpdateVideoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateVideo>>,
+  TError,
+  { id: number; data: BodyType<UpdateVideoBody> },
+  TContext
+> => {
+  const mutationKey = ["updateVideo"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateVideo>>,
+    { id: number; data: BodyType<UpdateVideoBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateVideo(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateVideoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateVideo>>
+>;
+export type UpdateVideoMutationBody = BodyType<UpdateVideoBody>;
+export type UpdateVideoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a video record
+ */
+export const useUpdateVideo = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateVideo>>,
+    TError,
+    { id: number; data: BodyType<UpdateVideoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateVideo>>,
+  TError,
+  { id: number; data: BodyType<UpdateVideoBody> },
+  TContext
+> => {
+  return useMutation(getUpdateVideoMutationOptions(options));
+};
+
+/**
+ * @summary Delete a video record
+ */
+export const getDeleteVideoUrl = (id: number) => {
+  return `/api/content/videos/${id}`;
+};
+
+export const deleteVideo = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteVideoUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteVideoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteVideo>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteVideo>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteVideo"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteVideo>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteVideo(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteVideoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteVideo>>
+>;
+
+export type DeleteVideoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a video record
+ */
+export const useDeleteVideo = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteVideo>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteVideo>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteVideoMutationOptions(options));
+};
+
+/**
+ * @summary Get dashboard stats - totals and breakdowns
+ */
+export const getGetContentStatsUrl = () => {
+  return `/api/content/stats`;
+};
+
+export const getContentStats = async (
+  options?: RequestInit,
+): Promise<ContentStats> => {
+  return customFetch<ContentStats>(getGetContentStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetContentStatsQueryKey = () => {
+  return [`/api/content/stats`] as const;
+};
+
+export const getGetContentStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getContentStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getContentStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetContentStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getContentStats>>> = ({
+    signal,
+  }) => getContentStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getContentStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetContentStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getContentStats>>
+>;
+export type GetContentStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get dashboard stats - totals and breakdowns
+ */
+
+export function useGetContentStats<
+  TData = Awaited<ReturnType<typeof getContentStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getContentStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetContentStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get recent activity feed across the pipeline
+ */
+export const getGetRecentActivityUrl = () => {
+  return `/api/content/recent`;
+};
+
+export const getRecentActivity = async (
+  options?: RequestInit,
+): Promise<ActivityItem[]> => {
+  return customFetch<ActivityItem[]>(getGetRecentActivityUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetRecentActivityQueryKey = () => {
+  return [`/api/content/recent`] as const;
+};
+
+export const getGetRecentActivityQueryOptions = <
+  TData = Awaited<ReturnType<typeof getRecentActivity>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRecentActivity>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetRecentActivityQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getRecentActivity>>
+  > = ({ signal }) => getRecentActivity({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getRecentActivity>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetRecentActivityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getRecentActivity>>
+>;
+export type GetRecentActivityQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get recent activity feed across the pipeline
+ */
+
+export function useGetRecentActivity<
+  TData = Awaited<ReturnType<typeof getRecentActivity>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getRecentActivity>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetRecentActivityQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary AI-generate a batch of topic ideas for a niche
+ */
+export const getGenerateTopicsUrl = () => {
+  return `/api/content/generate-topics`;
+};
+
+export const generateTopics = async (
+  generateTopicsBody: GenerateTopicsBody,
+  options?: RequestInit,
+): Promise<Topic[]> => {
+  return customFetch<Topic[]>(getGenerateTopicsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(generateTopicsBody),
+  });
+};
+
+export const getGenerateTopicsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateTopics>>,
+    TError,
+    { data: BodyType<GenerateTopicsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateTopics>>,
+  TError,
+  { data: BodyType<GenerateTopicsBody> },
+  TContext
+> => {
+  const mutationKey = ["generateTopics"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateTopics>>,
+    { data: BodyType<GenerateTopicsBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateTopics(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateTopicsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateTopics>>
+>;
+export type GenerateTopicsMutationBody = BodyType<GenerateTopicsBody>;
+export type GenerateTopicsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary AI-generate a batch of topic ideas for a niche
+ */
+export const useGenerateTopics = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateTopics>>,
+    TError,
+    { data: BodyType<GenerateTopicsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateTopics>>,
+  TError,
+  { data: BodyType<GenerateTopicsBody> },
+  TContext
+> => {
+  return useMutation(getGenerateTopicsMutationOptions(options));
+};
+
+/**
+ * @summary AI-generate a viral script from a topic (SSE streaming)
+ */
+export const getGenerateScriptUrl = () => {
+  return `/api/content/generate-script`;
+};
+
+export const generateScript = async (
+  generateScriptBody: GenerateScriptBody,
+  options?: RequestInit,
+): Promise<unknown> => {
+  return customFetch<unknown>(getGenerateScriptUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(generateScriptBody),
+  });
+};
+
+export const getGenerateScriptMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateScript>>,
+    TError,
+    { data: BodyType<GenerateScriptBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateScript>>,
+  TError,
+  { data: BodyType<GenerateScriptBody> },
+  TContext
+> => {
+  const mutationKey = ["generateScript"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateScript>>,
+    { data: BodyType<GenerateScriptBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateScript(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateScriptMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateScript>>
+>;
+export type GenerateScriptMutationBody = BodyType<GenerateScriptBody>;
+export type GenerateScriptMutationError = ErrorType<unknown>;
+
+/**
+ * @summary AI-generate a viral script from a topic (SSE streaming)
+ */
+export const useGenerateScript = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateScript>>,
+    TError,
+    { data: BodyType<GenerateScriptBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateScript>>,
+  TError,
+  { data: BodyType<GenerateScriptBody> },
+  TContext
+> => {
+  return useMutation(getGenerateScriptMutationOptions(options));
+};
+
+/**
+ * @summary AI-generate title, caption, and hashtags for a script
+ */
+export const getGenerateMetadataUrl = () => {
+  return `/api/content/generate-metadata`;
+};
+
+export const generateMetadata = async (
+  generateMetadataBody: GenerateMetadataBody,
+  options?: RequestInit,
+): Promise<VideoMetadata> => {
+  return customFetch<VideoMetadata>(getGenerateMetadataUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(generateMetadataBody),
+  });
+};
+
+export const getGenerateMetadataMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateMetadata>>,
+    TError,
+    { data: BodyType<GenerateMetadataBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateMetadata>>,
+  TError,
+  { data: BodyType<GenerateMetadataBody> },
+  TContext
+> => {
+  const mutationKey = ["generateMetadata"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateMetadata>>,
+    { data: BodyType<GenerateMetadataBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateMetadata(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateMetadataMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateMetadata>>
+>;
+export type GenerateMetadataMutationBody = BodyType<GenerateMetadataBody>;
+export type GenerateMetadataMutationError = ErrorType<unknown>;
+
+/**
+ * @summary AI-generate title, caption, and hashtags for a script
+ */
+export const useGenerateMetadata = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateMetadata>>,
+    TError,
+    { data: BodyType<GenerateMetadataBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateMetadata>>,
+  TError,
+  { data: BodyType<GenerateMetadataBody> },
+  TContext
+> => {
+  return useMutation(getGenerateMetadataMutationOptions(options));
+};

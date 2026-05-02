@@ -14,3 +14,309 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary List all generated topics
+ */
+export const ListTopicsQueryParams = zod.object({
+  niche: zod.coerce.string().optional(),
+  status: zod.coerce.string().optional(),
+});
+
+export const ListTopicsResponseItem = zod.object({
+  id: zod.number(),
+  niche: zod.string(),
+  title: zod.string(),
+  hook: zod.string(),
+  status: zod.enum(["pending", "scripted", "skipped"]),
+  createdAt: zod.coerce.date(),
+});
+export const ListTopicsResponse = zod.array(ListTopicsResponseItem);
+
+/**
+ * @summary Create a topic manually
+ */
+export const CreateTopicBody = zod.object({
+  niche: zod.string(),
+  title: zod.string(),
+  hook: zod.string(),
+});
+
+/**
+ * @summary Get a topic by ID
+ */
+export const GetTopicParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetTopicResponse = zod.object({
+  id: zod.number(),
+  niche: zod.string(),
+  title: zod.string(),
+  hook: zod.string(),
+  status: zod.enum(["pending", "scripted", "skipped"]),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a topic
+ */
+export const DeleteTopicParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List all scripts
+ */
+export const ListScriptsQueryParams = zod.object({
+  niche: zod.coerce.string().optional(),
+  status: zod.coerce.string().optional(),
+});
+
+export const ListScriptsResponseItem = zod.object({
+  id: zod.number(),
+  topicId: zod.number().nullish(),
+  niche: zod.string(),
+  title: zod.string(),
+  hook: zod.string(),
+  body: zod.string(),
+  reveal: zod.string(),
+  loopEnding: zod.string(),
+  fullScript: zod.string(),
+  durationSeconds: zod.number(),
+  status: zod.enum(["draft", "approved", "exported"]),
+  createdAt: zod.coerce.date(),
+});
+export const ListScriptsResponse = zod.array(ListScriptsResponseItem);
+
+/**
+ * @summary Create a script manually
+ */
+export const CreateScriptBody = zod.object({
+  topicId: zod.number().nullish(),
+  niche: zod.string(),
+  title: zod.string(),
+  hook: zod.string(),
+  body: zod.string(),
+  reveal: zod.string(),
+  loopEnding: zod.string(),
+  fullScript: zod.string(),
+  durationSeconds: zod.number(),
+});
+
+/**
+ * @summary Get a script by ID
+ */
+export const GetScriptParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetScriptResponse = zod.object({
+  id: zod.number(),
+  topicId: zod.number().nullish(),
+  niche: zod.string(),
+  title: zod.string(),
+  hook: zod.string(),
+  body: zod.string(),
+  reveal: zod.string(),
+  loopEnding: zod.string(),
+  fullScript: zod.string(),
+  durationSeconds: zod.number(),
+  status: zod.enum(["draft", "approved", "exported"]),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Update a script
+ */
+export const UpdateScriptParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateScriptBody = zod.object({
+  hook: zod.string().optional(),
+  body: zod.string().optional(),
+  reveal: zod.string().optional(),
+  loopEnding: zod.string().optional(),
+  fullScript: zod.string().optional(),
+  status: zod.enum(["draft", "approved", "exported"]).optional(),
+});
+
+export const UpdateScriptResponse = zod.object({
+  id: zod.number(),
+  topicId: zod.number().nullish(),
+  niche: zod.string(),
+  title: zod.string(),
+  hook: zod.string(),
+  body: zod.string(),
+  reveal: zod.string(),
+  loopEnding: zod.string(),
+  fullScript: zod.string(),
+  durationSeconds: zod.number(),
+  status: zod.enum(["draft", "approved", "exported"]),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a script
+ */
+export const DeleteScriptParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List all video records
+ */
+export const ListVideosQueryParams = zod.object({
+  status: zod.coerce.string().optional(),
+  platform: zod.coerce.string().optional(),
+});
+
+export const ListVideosResponseItem = zod.object({
+  id: zod.number(),
+  scriptId: zod.number(),
+  niche: zod.string(),
+  title: zod.string(),
+  caption: zod.string(),
+  hashtags: zod.string(),
+  platform: zod.enum(["instagram", "youtube", "facebook", "all"]),
+  status: zod.enum(["queued", "ready", "published"]),
+  voiceStyle: zod.string(),
+  subtitlesEnabled: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+export const ListVideosResponse = zod.array(ListVideosResponseItem);
+
+/**
+ * @summary Create a video record from a script
+ */
+export const CreateVideoBody = zod.object({
+  scriptId: zod.number(),
+  platform: zod.enum(["instagram", "youtube", "facebook", "all"]),
+  voiceStyle: zod.string().optional(),
+  subtitlesEnabled: zod.boolean().optional(),
+});
+
+/**
+ * @summary Get a video record by ID
+ */
+export const GetVideoParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetVideoResponse = zod.object({
+  id: zod.number(),
+  scriptId: zod.number(),
+  niche: zod.string(),
+  title: zod.string(),
+  caption: zod.string(),
+  hashtags: zod.string(),
+  platform: zod.enum(["instagram", "youtube", "facebook", "all"]),
+  status: zod.enum(["queued", "ready", "published"]),
+  voiceStyle: zod.string(),
+  subtitlesEnabled: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Update a video record
+ */
+export const UpdateVideoParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateVideoBody = zod.object({
+  title: zod.string().optional(),
+  caption: zod.string().optional(),
+  hashtags: zod.string().optional(),
+  platform: zod.enum(["instagram", "youtube", "facebook", "all"]).optional(),
+  status: zod.enum(["queued", "ready", "published"]).optional(),
+  voiceStyle: zod.string().optional(),
+  subtitlesEnabled: zod.boolean().optional(),
+});
+
+export const UpdateVideoResponse = zod.object({
+  id: zod.number(),
+  scriptId: zod.number(),
+  niche: zod.string(),
+  title: zod.string(),
+  caption: zod.string(),
+  hashtags: zod.string(),
+  platform: zod.enum(["instagram", "youtube", "facebook", "all"]),
+  status: zod.enum(["queued", "ready", "published"]),
+  voiceStyle: zod.string(),
+  subtitlesEnabled: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a video record
+ */
+export const DeleteVideoParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Get dashboard stats - totals and breakdowns
+ */
+export const GetContentStatsResponse = zod.object({
+  totalTopics: zod.number(),
+  totalScripts: zod.number(),
+  totalVideos: zod.number(),
+  approvedScripts: zod.number(),
+  publishedVideos: zod.number(),
+  readyVideos: zod.number(),
+  topicsByNiche: zod.record(zod.string(), zod.number()),
+  scriptsByNiche: zod.record(zod.string(), zod.number()),
+  videosByPlatform: zod.record(zod.string(), zod.number()),
+  recentTopicsCount: zod.number(),
+  recentScriptsCount: zod.number(),
+});
+
+/**
+ * @summary Get recent activity feed across the pipeline
+ */
+export const GetRecentActivityResponseItem = zod.object({
+  id: zod.string(),
+  type: zod.enum(["topic", "script", "video"]),
+  action: zod.string(),
+  niche: zod.string(),
+  title: zod.string(),
+  status: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const GetRecentActivityResponse = zod.array(
+  GetRecentActivityResponseItem,
+);
+
+/**
+ * @summary AI-generate a batch of topic ideas for a niche
+ */
+export const GenerateTopicsBody = zod.object({
+  niche: zod.enum(["facts", "psychology", "money", "tech", "body", "dark"]),
+  count: zod.number().optional(),
+});
+
+/**
+ * @summary AI-generate a viral script from a topic (SSE streaming)
+ */
+export const GenerateScriptBody = zod.object({
+  topicId: zod.number().nullish(),
+  niche: zod.string(),
+  title: zod.string(),
+  hook: zod.string(),
+});
+
+/**
+ * @summary AI-generate title, caption, and hashtags for a script
+ */
+export const GenerateMetadataBody = zod.object({
+  scriptId: zod.number(),
+  platform: zod.enum(["instagram", "youtube", "facebook", "all"]),
+});
+
+export const GenerateMetadataResponse = zod.object({
+  title: zod.string(),
+  caption: zod.string(),
+  hashtags: zod.string(),
+});

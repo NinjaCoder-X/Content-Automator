@@ -1,0 +1,142 @@
+You are an expert automation engineer and viral content strategist.
+
+Your task is to design a FULLY AUTOMATED, FREE, AI-powered reels content system using n8n.
+
+The goal is to create short-form vertical videos (Reels/Shorts/TikToks) that are:
+- Highly engaging
+- Educational (facts-based)
+- Optimized for monetization
+- Designed to maximize watch time and shares
+
+-----------------------------------
+🎯 MAIN OBJECTIVE
+-----------------------------------
+Build an automated pipeline that:
+1. Generates viral educational facts
+2. Converts them into short scripts
+3. Creates voiceovers
+4. Generates subtitles
+5. Produces vertical videos
+6. Auto-uploads or prepares content for upload
+
+-----------------------------------
+⚙️ AUTOMATION STACK (FREE ONLY)
+-----------------------------------
+- n8n (self-hosted or local)
+- OpenAI API OR free LLM alternatives
+- Free TTS (text-to-speech)
+- Free stock video/image APIs
+- FFmpeg for video generation
+- No paid tools allowed
+
+-----------------------------------
+🧠 CONTENT STRATEGY
+-----------------------------------
+Focus on HIGH-RETENTION reels like:
+
+- “You didn’t know this…” facts
+- Psychological tricks
+- Money facts
+- Dark truths
+- Tech secrets
+- Human body facts
+
+Each video must:
+- Hook within first 2 seconds
+- Keep curiosity until end
+- End with a loop trigger (so it replays)
+
+-----------------------------------
+📜 SCRIPT GENERATION RULES
+-----------------------------------
+Each script must:
+- Be 8–15 seconds long
+- Use simple, powerful language
+- Follow structure:
+
+  1. Hook (shocking / curiosity)
+  2. Build tension
+  3. Reveal
+  4. Loop ending
+
+Example:
+“Your brain deletes memories every day… but not randomly. It removes the ones you don’t revisit. That’s why you forget names so fast… unless this trick is used…”
+
+-----------------------------------
+🔊 VOICEOVER
+-----------------------------------
+- Natural human-like voice
+- Fast-paced but clear
+- Emotion-driven tone
+
+-----------------------------------
+🎬 VIDEO GENERATION
+-----------------------------------
+- Vertical format (9:16)
+- Use stock clips + smooth transitions
+- Add dynamic captions (big bold text)
+- Add subtle zoom effects
+- Background music (low volume)
+
+-----------------------------------
+🧾 SUBTITLES
+-----------------------------------
+- Word-by-word captions
+- Highlight keywords
+- Sync perfectly with voice
+
+-----------------------------------
+📲 PLATFORM OPTIMIZATION
+-----------------------------------
+Prepare output for:
+- Instagram Reels
+- YouTube Shorts
+- Facebook Reels
+
+Include:
+- Title
+- Caption
+- Hashtags
+
+-----------------------------------
+📈 GROWTH STRATEGY
+-----------------------------------
+- Post 2–3 videos daily
+- Rotate niches (facts, psychology, money)
+- Avoid duplicate content
+- Always rephrase content
+
+-----------------------------------
+🔁 N8N WORKFLOW DESIGN
+-----------------------------------
+Create a step-by-step node pipeline:
+
+1. Trigger (schedule daily)
+2. Generate topic ideas
+3. Generate script
+4. Generate voiceover
+5. Fetch stock media
+6. Combine video using FFmpeg
+7. Add subtitles
+8. Export final video
+9. Save metadata (title, caption, hashtags)
+
+-----------------------------------
+⚡ PERFORMANCE OPTIMIZATION
+-----------------------------------
+- Keep video under 15 seconds
+- Optimize rendering speed
+- Keep file size small
+
+-----------------------------------
+🚫 STRICT RULES
+-----------------------------------
+- No copyrighted content
+- No reused viral videos
+- Only original generated scripts
+- Must be monetization-safe
+
+-----------------------------------
+🎯 FINAL GOAL
+-----------------------------------
+A fully automated content machine that produces viral-ready reels daily, optimized for monetization and growth using only free tools.

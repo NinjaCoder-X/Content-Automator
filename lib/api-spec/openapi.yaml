@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: content
+    description: Viral content pipeline operations
+  - name: openai
+    description: OpenAI AI chat, image, and audio operations
 paths:
   /healthz:
     get:
@@ -24,6 +28,369 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /content/topics:
+    get:
+      operationId: listTopics
+      tags: [content]
+      summary: List all generated topics
+      parameters:
+        - name: niche
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Topic"
+    post:
+      operationId: createTopic
+      tags: [content]
+      summary: Create a topic manually
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTopicBody"
+      responses:
+        "201":
+          description: Created topic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Topic"
+
+  /content/topics/{id}:
+    get:
+      operationId: getTopic
+      tags: [content]
+      summary: Get a topic by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Topic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Topic"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTopic
+      tags: [content]
+      summary: Delete a topic
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /content/scripts:
+    get:
+      operationId: listScripts
+      tags: [content]
+      summary: List all scripts
+      parameters:
+        - name: niche
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of scripts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Script"
+    post:
+      operationId: createScript
+      tags: [content]
+      summary: Create a script manually
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScriptBody"
+      responses:
+        "201":
+          description: Created script
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Script"
+
+  /content/scripts/{id}:
+    get:
+      operationId: getScript
+      tags: [content]
+      summary: Get a script by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Script
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Script"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateScript
+      tags: [content]
+      summary: Update a script
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateScriptBody"
+      responses:
+        "200":
+          description: Updated script
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Script"
+    delete:
+      operationId: deleteScript
+      tags: [content]
+      summary: Delete a script
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /content/videos:
+    get:
+      operationId: listVideos
+      tags: [content]
+      summary: List all video records
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: platform
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of videos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Video"
+    post:
+      operationId: createVideo
+      tags: [content]
+      summary: Create a video record from a script
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVideoBody"
+      responses:
+        "201":
+          description: Created video record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+
+  /content/videos/{id}:
+    get:
+      operationId: getVideo
+      tags: [content]
+      summary: Get a video record by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Video
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateVideo
+      tags: [content]
+      summary: Update a video record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVideoBody"
+      responses:
+        "200":
+          description: Updated video
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+    delete:
+      operationId: deleteVideo
+      tags: [content]
+      summary: Delete a video record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /content/stats:
+    get:
+      operationId: getContentStats
+      tags: [content]
+      summary: Get dashboard stats - totals and breakdowns
+      responses:
+        "200":
+          description: Content stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentStats"
+
+  /content/recent:
+    get:
+      operationId: getRecentActivity
+      tags: [content]
+      summary: Get recent activity feed across the pipeline
+      responses:
+        "200":
+          description: Recent activity items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /content/generate-topics:
+    post:
+      operationId: generateTopics
+      tags: [content]
+      summary: AI-generate a batch of topic ideas for a niche
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateTopicsBody"
+      responses:
+        "201":
+          description: Generated and saved topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Topic"
+
+  /content/generate-script:
+    post:
+      operationId: generateScript
+      tags: [content]
+      summary: AI-generate a viral script from a topic (SSE streaming)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateScriptBody"
+      responses:
+        "200":
+          description: SSE stream of script content
+          content:
+            text/event-stream: {}
+
+  /content/generate-metadata:
+    post:
+      operationId: generateMetadata
+      tags: [content]
+      summary: AI-generate title, caption, and hashtags for a script
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateMetadataBody"
+      responses:
+        "200":
+          description: Generated metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoMetadata"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +401,336 @@ components:
       required:
         - status
 
+    Topic:
+      type: object
+      properties:
+        id:
+          type: integer
+        niche:
+          type: string
+        title:
+          type: string
+        hook:
+          type: string
+        status:
+          type: string
+          enum: [pending, scripted, skipped]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - niche
+        - title
+        - hook
+        - status
+        - createdAt
+
+    CreateTopicBody:
+      type: object
+      properties:
+        niche:
+          type: string
+        title:
+          type: string
+        hook:
+          type: string
+      required:
+        - niche
+        - title
+        - hook
+
+    Script:
+      type: object
+      properties:
+        id:
+          type: integer
+        topicId:
+          type: integer
+          nullable: true
+        niche:
+          type: string
+        title:
+          type: string
+        hook:
+          type: string
+        body:
+          type: string
+        reveal:
+          type: string
+        loopEnding:
+          type: string
+        fullScript:
+          type: string
+        durationSeconds:
+          type: integer
+        status:
+          type: string
+          enum: [draft, approved, exported]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - niche
+        - title
+        - hook
+        - body
+        - reveal
+        - loopEnding
+        - fullScript
+        - durationSeconds
+        - status
+        - createdAt
+
+    CreateScriptBody:
+      type: object
+      properties:
+        topicId:
+          type: integer
+          nullable: true
+        niche:
+          type: string
+        title:
+          type: string
+        hook:
+          type: string
+        body:
+          type: string
+        reveal:
+          type: string
+        loopEnding:
+          type: string
+        fullScript:
+          type: string
+        durationSeconds:
+          type: integer
+      required:
+        - niche
+        - title
+        - hook
+        - body
+        - reveal
+        - loopEnding
+        - fullScript
+        - durationSeconds
+
+    UpdateScriptBody:
+      type: object
+      properties:
+        hook:
+          type: string
+        body:
+          type: string
+        reveal:
+          type: string
+        loopEnding:
+          type: string
+        fullScript:
+          type: string
+        status:
+          type: string
+          enum: [draft, approved, exported]
+
+    Video:
+      type: object
+      properties:
+        id:
+          type: integer
+        scriptId:
+          type: integer
+        niche:
+          type: string
+        title:
+          type: string
+        caption:
+          type: string
+        hashtags:
+          type: string
+        platform:
+          type: string
+          enum: [instagram, youtube, facebook, all]
+        status:
+          type: string
+          enum: [queued, ready, published]
+        voiceStyle:
+          type: string
+        subtitlesEnabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - scriptId
+        - niche
+        - title
+        - caption
+        - hashtags
+        - platform
+        - status
+        - voiceStyle
+        - subtitlesEnabled
+        - createdAt
+
+    CreateVideoBody:
+      type: object
+      properties:
+        scriptId:
+          type: integer
+        platform:
+          type: string
+          enum: [instagram, youtube, facebook, all]
+        voiceStyle:
+          type: string
+        subtitlesEnabled:
+          type: boolean
+      required:
+        - scriptId
+        - platform
+
+    UpdateVideoBody:
+      type: object
+      properties:
+        title:
+          type: string
+        caption:
+          type: string
+        hashtags:
+          type: string
+        platform:
+          type: string
+          enum: [instagram, youtube, facebook, all]
+        status:
+          type: string
+          enum: [queued, ready, published]
+        voiceStyle:
+          type: string
+        subtitlesEnabled:
+          type: boolean
+
+    ContentStats:
+      type: object
+      properties:
+        totalTopics:
+          type: integer
+        totalScripts:
+          type: integer
+        totalVideos:
+          type: integer
+        approvedScripts:
+          type: integer
+        publishedVideos:
+          type: integer
+        readyVideos:
+          type: integer
+        topicsByNiche:
+          type: object
+          additionalProperties:
+            type: integer
+        scriptsByNiche:
+          type: object
+          additionalProperties:
+            type: integer
+        videosByPlatform:
+          type: object
+          additionalProperties:
+            type: integer
+        recentTopicsCount:
+          type: integer
+        recentScriptsCount:
+          type: integer
+      required:
+        - totalTopics
+        - totalScripts
+        - totalVideos
+        - approvedScripts
+        - publishedVideos
+        - readyVideos
+        - topicsByNiche
+        - scriptsByNiche
+        - videosByPlatform
+        - recentTopicsCount
+        - recentScriptsCount
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [topic, script, video]
+        action:
+          type: string
+        niche:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - action
+        - niche
+        - title
+        - status
+        - createdAt
+
+    GenerateTopicsBody:
+      type: object
+      properties:
+        niche:
+          type: string
+          enum: [facts, psychology, money, tech, body, dark]
+        count:
+          type: integer
+      required:
+        - niche
+
+    GenerateScriptBody:
+      type: object
+      properties:
+        topicId:
+          type: integer
+          nullable: true
+        niche:
+          type: string
+        title:
+          type: string
+        hook:
+          type: string
+      required:
+        - niche
+        - title
+        - hook
+
+    GenerateMetadataBody:
+      type: object
+      properties:
+        scriptId:
+          type: integer
+        platform:
+          type: string
+          enum: [instagram, youtube, facebook, all]
+      required:
+        - scriptId
+        - platform
+
+    VideoMetadata:
+      type: object
+      properties:
+        title:
+          type: string
+        caption:
+          type: string
+        hashtags:
+          type: string
+      required:
+        - title
+        - caption
+        - hashtags

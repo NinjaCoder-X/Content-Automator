@@ -8,3 +8,255 @@
 export interface HealthStatus {
   status: string;
 }
+
+export type TopicStatus = (typeof TopicStatus)[keyof typeof TopicStatus];
+
+export const TopicStatus = {
+  pending: "pending",
+  scripted: "scripted",
+  skipped: "skipped",
+} as const;
+
+export interface Topic {
+  id: number;
+  niche: string;
+  title: string;
+  hook: string;
+  status: TopicStatus;
+  createdAt: string;
+}
+
+export interface CreateTopicBody {
+  niche: string;
+  title: string;
+  hook: string;
+}
+
+export type ScriptStatus = (typeof ScriptStatus)[keyof typeof ScriptStatus];
+
+export const ScriptStatus = {
+  draft: "draft",
+  approved: "approved",
+  exported: "exported",
+} as const;
+
+export interface Script {
+  id: number;
+  topicId?: number | null;
+  niche: string;
+  title: string;
+  hook: string;
+  body: string;
+  reveal: string;
+  loopEnding: string;
+  fullScript: string;
+  durationSeconds: number;
+  status: ScriptStatus;
+  createdAt: string;
+}
+
+export interface CreateScriptBody {
+  topicId?: number | null;
+  niche: string;
+  title: string;
+  hook: string;
+  body: string;
+  reveal: string;
+  loopEnding: string;
+  fullScript: string;
+  durationSeconds: number;
+}
+
+export type UpdateScriptBodyStatus =
+  (typeof UpdateScriptBodyStatus)[keyof typeof UpdateScriptBodyStatus];
+
+export const UpdateScriptBodyStatus = {
+  draft: "draft",
+  approved: "approved",
+  exported: "exported",
+} as const;
+
+export interface UpdateScriptBody {
+  hook?: string;
+  body?: string;
+  reveal?: string;
+  loopEnding?: string;
+  fullScript?: string;
+  status?: UpdateScriptBodyStatus;
+}
+
+export type VideoPlatform = (typeof VideoPlatform)[keyof typeof VideoPlatform];
+
+export const VideoPlatform = {
+  instagram: "instagram",
+  youtube: "youtube",
+  facebook: "facebook",
+  all: "all",
+} as const;
+
+export type VideoStatus = (typeof VideoStatus)[keyof typeof VideoStatus];
+
+export const VideoStatus = {
+  queued: "queued",
+  ready: "ready",
+  published: "published",
+} as const;
+
+export interface Video {
+  id: number;
+  scriptId: number;
+  niche: string;
+  title: string;
+  caption: string;
+  hashtags: string;
+  platform: VideoPlatform;
+  status: VideoStatus;
+  voiceStyle: string;
+  subtitlesEnabled: boolean;
+  createdAt: string;
+}
+
+export type CreateVideoBodyPlatform =
+  (typeof CreateVideoBodyPlatform)[keyof typeof CreateVideoBodyPlatform];
+
+export const CreateVideoBodyPlatform = {
+  instagram: "instagram",
+  youtube: "youtube",
+  facebook: "facebook",
+  all: "all",
+} as const;
+
+export interface CreateVideoBody {
+  scriptId: number;
+  platform: CreateVideoBodyPlatform;
+  voiceStyle?: string;
+  subtitlesEnabled?: boolean;
+}
+
+export type UpdateVideoBodyPlatform =
+  (typeof UpdateVideoBodyPlatform)[keyof typeof UpdateVideoBodyPlatform];
+
+export const UpdateVideoBodyPlatform = {
+  instagram: "instagram",
+  youtube: "youtube",
+  facebook: "facebook",
+  all: "all",
+} as const;
+
+export type UpdateVideoBodyStatus =
+  (typeof UpdateVideoBodyStatus)[keyof typeof UpdateVideoBodyStatus];
+
+export const UpdateVideoBodyStatus = {
+  queued: "queued",
+  ready: "ready",
+  published: "published",
+} as const;
+
+export interface UpdateVideoBody {
+  title?: string;
+  caption?: string;
+  hashtags?: string;
+  platform?: UpdateVideoBodyPlatform;
+  status?: UpdateVideoBodyStatus;
+  voiceStyle?: string;
+  subtitlesEnabled?: boolean;
+}
+
+export type ContentStatsTopicsByNiche = { [key: string]: number };
+
+export type ContentStatsScriptsByNiche = { [key: string]: number };
+
+export type ContentStatsVideosByPlatform = { [key: string]: number };
+
+export interface ContentStats {
+  totalTopics: number;
+  totalScripts: number;
+  totalVideos: number;
+  approvedScripts: number;
+  publishedVideos: number;
+  readyVideos: number;
+  topicsByNiche: ContentStatsTopicsByNiche;
+  scriptsByNiche: ContentStatsScriptsByNiche;
+  videosByPlatform: ContentStatsVideosByPlatform;
+  recentTopicsCount: number;
+  recentScriptsCount: number;
+}
+
+export type ActivityItemType =
+  (typeof ActivityItemType)[keyof typeof ActivityItemType];
+
+export const ActivityItemType = {
+  topic: "topic",
+  script: "script",
+  video: "video",
+} as const;
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityItemType;
+  action: string;
+  niche: string;
+  title: string;
+  status: string;
+  createdAt: string;
+}
+
+export type GenerateTopicsBodyNiche =
+  (typeof GenerateTopicsBodyNiche)[keyof typeof GenerateTopicsBodyNiche];
+
+export const GenerateTopicsBodyNiche = {
+  facts: "facts",
+  psychology: "psychology",
+  money: "money",
+  tech: "tech",
+  body: "body",
+  dark: "dark",
+} as const;
+
+export interface GenerateTopicsBody {
+  niche: GenerateTopicsBodyNiche;
+  count?: number;
+}
+
+export interface GenerateScriptBody {
+  topicId?: number | null;
+  niche: string;
+  title: string;
+  hook: string;
+}
+
+export type GenerateMetadataBodyPlatform =
+  (typeof GenerateMetadataBodyPlatform)[keyof typeof GenerateMetadataBodyPlatform];
+
+export const GenerateMetadataBodyPlatform = {
+  instagram: "instagram",
+  youtube: "youtube",
+  facebook: "facebook",
+  all: "all",
+} as const;
+
+export interface GenerateMetadataBody {
+  scriptId: number;
+  platform: GenerateMetadataBodyPlatform;
+}
+
+export interface VideoMetadata {
+  title: string;
+  caption: string;
+  hashtags: string;
+}
+
+export type ListTopicsParams = {
+  niche?: string;
+  status?: string;
+};
+
+export type ListScriptsParams = {
+  niche?: string;
+  status?: string;
+};
+
+export type ListVideosParams = {
+  status?: string;
+  platform?: string;
+};
