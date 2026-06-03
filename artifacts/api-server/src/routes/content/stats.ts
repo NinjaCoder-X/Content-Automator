@@ -1,47 +1,68 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { topicsTable, scriptsTable, videosTable } from "@workspace/db";
-import { eq, desc, gte } from "drizzle-orm";
+import { eq, desc, gte, count } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/stats", async (req, res) => {
-  const [topics, scripts, videos] = await Promise.all([
-    db.select().from(topicsTable),
-    db.select().from(scriptsTable),
-    db.select().from(videosTable),
-  ]);
-
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-  const topicsByNiche: Record<string, number> = {};
-  for (const t of topics) {
-    topicsByNiche[t.niche] = (topicsByNiche[t.niche] ?? 0) + 1;
-  }
+  // ⚡ Bolt: Execute aggregation queries directly in the database instead of pulling all rows into memory
+  const [
+    totalTopicsQuery,
+    totalScriptsQuery,
+    totalVideosQuery,
+    approvedScriptsQuery,
+    publishedVideosQuery,
+    readyVideosQuery,
+    topicsByNicheQuery,
+    scriptsByNicheQuery,
+    videosByPlatformQuery,
+    recentTopicsQuery,
+    recentScriptsQuery,
+  ] = await Promise.all([
+    db.select({ count: count() }).from(topicsTable),
+    db.select({ count: count() }).from(scriptsTable),
+    db.select({ count: count() }).from(videosTable),
+    db.select({ count: count() }).from(scriptsTable).where(eq(scriptsTable.status, "approved")),
+    db.select({ count: count() }).from(videosTable).where(eq(videosTable.status, "published")),
+    db.select({ count: count() }).from(videosTable).where(eq(videosTable.status, "ready")),
+    db.select({ niche: topicsTable.niche, count: count() }).from(topicsTable).groupBy(topicsTable.niche),
+    db.select({ niche: scriptsTable.niche, count: count() }).from(scriptsTable).groupBy(scriptsTable.niche),
+    db.select({ platform: videosTable.platform, count: count() }).from(videosTable).groupBy(videosTable.platform),
+    db.select({ count: count() }).from(topicsTable).where(gte(topicsTable.createdAt, oneDayAgo)),
+    db.select({ count: count() }).from(scriptsTable).where(gte(scriptsTable.createdAt, oneDayAgo)),
+  ]);
 
-  const scriptsByNiche: Record<string, number> = {};
-  for (const s of scripts) {
-    scriptsByNiche[s.niche] = (scriptsByNiche[s.niche] ?? 0) + 1;
-  }
+  const topicsByNiche = topicsByNicheQuery.reduce((acc, curr) => {
+    acc[curr.niche] = curr.count;
+    return acc;
+  }, {} as Record<string, number>);
 
-  const videosByPlatform: Record<string, number> = {};
-  for (const v of videos) {
-    videosByPlatform[v.platform] = (videosByPlatform[v.platform] ?? 0) + 1;
-  }
+  const scriptsByNiche = scriptsByNicheQuery.reduce((acc, curr) => {
+    acc[curr.niche] = curr.count;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const videosByPlatform = videosByPlatformQuery.reduce((acc, curr) => {
+    acc[curr.platform] = curr.count;
+    return acc;
+  }, {} as Record<string, number>);
 
   res.json({
-    totalTopics: topics.length,
-    totalScripts: scripts.length,
-    totalVideos: videos.length,
-    approvedScripts: scripts.filter((s) => s.status === "approved").length,
-    publishedVideos: videos.filter((v) => v.status === "published").length,
-    readyVideos: videos.filter((v) => v.status === "ready").length,
+    totalTopics: totalTopicsQuery[0]?.count ?? 0,
+    totalScripts: totalScriptsQuery[0]?.count ?? 0,
+    totalVideos: totalVideosQuery[0]?.count ?? 0,
+    approvedScripts: approvedScriptsQuery[0]?.count ?? 0,
+    publishedVideos: publishedVideosQuery[0]?.count ?? 0,
+    readyVideos: readyVideosQuery[0]?.count ?? 0,
     topicsByNiche,
     scriptsByNiche,
     videosByPlatform,
-    recentTopicsCount: topics.filter((t) => t.createdAt >= oneDayAgo).length,
-    recentScriptsCount: scripts.filter((s) => s.createdAt >= oneDayAgo).length,
+    recentTopicsCount: recentTopicsQuery[0]?.count ?? 0,
+    recentScriptsCount: recentScriptsQuery[0]?.count ?? 0,
   });
 });
 
