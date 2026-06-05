@@ -1,0 +1,3 @@
+## 2025-06-05 - [API Performance]
+**Learning:** Fetching all rows from a database table without `WHERE` clauses and using in-memory `.filter()` arrays is a codebase-specific anti-pattern that was heavily used in listing routes (`topics`, `scripts`, `videos`). This pattern forces the application server to allocate memory for potentially thousands of rows, leading to high latency and massive memory consumption under load.
+**Action:** Always filter results at the database level using Drizzle ORM's `where()` combined with `and()` / `eq()` operators before performing the `.select()`, rather than filtering the resulting JavaScript array in memory.

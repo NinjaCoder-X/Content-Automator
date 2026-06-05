@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { scriptsTable, topicsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, SQL } from "drizzle-orm";
 import {
   CreateScriptBody,
   UpdateScriptBody,
@@ -17,18 +17,21 @@ router.get("/scripts", async (req, res) => {
   const parsed = ListScriptsQueryParams.safeParse(req.query);
   const query = parsed.success ? parsed.data : {};
 
+  const conditions: SQL[] = [];
+  if (query.niche) {
+    conditions.push(eq(scriptsTable.niche, query.niche));
+  }
+  if (query.status) {
+    conditions.push(eq(scriptsTable.status, query.status));
+  }
+
   const results = await db
     .select()
     .from(scriptsTable)
+    .where(and(...conditions))
     .orderBy(desc(scriptsTable.createdAt));
 
-  const filtered = results.filter((s) => {
-    if (query.niche && s.niche !== query.niche) return false;
-    if (query.status && s.status !== query.status) return false;
-    return true;
-  });
-
-  res.json(filtered);
+  res.json(results);
 });
 
 router.post("/scripts", async (req, res) => {
