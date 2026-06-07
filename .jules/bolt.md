@@ -1,0 +1,3 @@
+## 2024-06-07 - Backend API In-Memory Array Filtering Anti-Pattern
+**Learning:** Found instances where the API was fetching the entire table contents (e.g. `topicsTable`, `scriptsTable`, `videosTable`) from the database, awaiting the query, and then using JavaScript `.filter()` to apply query parameters like `niche` or `status`. This is a massive memory leak and bottleneck waiting to happen as table size grows.
+**Action:** When filtering lists of resources via an API, ensure Drizzle ORM `where` clauses (like `eq` and `and`) are used to push the constraints to the database directly, returning only the matched results, improving time and space complexity from O(N) to O(1) query lookups.
