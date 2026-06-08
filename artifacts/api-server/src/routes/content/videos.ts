@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { videosTable, scriptsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import {
   CreateVideoBody,
   UpdateVideoBody,
@@ -17,18 +17,19 @@ router.get("/videos", async (req, res) => {
   const parsed = ListVideosQueryParams.safeParse(req.query);
   const query = parsed.success ? parsed.data : {};
 
-  const results = await db
+  // ⚡ Bolt: Push filtering to the database to reduce memory usage and bandwidth overhead
+  // Replacing O(n) JS filter after retrieving entire table with a native DB WHERE clause
+  const conditions = [];
+  if (query.status) conditions.push(eq(videosTable.status, query.status));
+  if (query.platform) conditions.push(eq(videosTable.platform, query.platform));
+
+  const videos = await db
     .select()
     .from(videosTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(videosTable.createdAt));
 
-  const filtered = results.filter((v) => {
-    if (query.status && v.status !== query.status) return false;
-    if (query.platform && v.platform !== query.platform) return false;
-    return true;
-  });
-
-  res.json(filtered);
+  res.json(videos);
 });
 
 router.post("/videos", async (req, res) => {
