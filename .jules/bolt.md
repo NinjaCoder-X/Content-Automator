@@ -1,0 +1,3 @@
+## 2024-03-24 - Database Query Filtering Anti-Pattern
+**Learning:** Found multiple endpoints (`/topics`, `/scripts`, `/videos`) retrieving entire database tables into server memory to apply filtering using JavaScript `.filter()`. This is a severe scalability bottleneck that wastes database bandwidth, creates memory bloat on the API server, and significantly increases response latency. Drizzle ORM provides a powerful `where` clause builder that can construct dynamic SQL query constraints efficiently.
+**Action:** Always push query filters down to the database using `where` clauses with `eq` and `and` operators. Never fetch more rows than necessary into server memory just to discard them in JS logic.
