@@ -1,0 +1,3 @@
+## 2026-06-09 - Backend Query Optimization
+**Learning:** Fetching full tables from the database and applying `.filter()` in-memory in JavaScript is a performance anti-pattern. It loads unnecessary data into memory and increases the database-to-application network overhead.
+**Action:** Push query filters down to the database using Drizzle ORM's `where` clauses (with `eq`, `and`, etc.) rather than fetching full tables and applying JavaScript `.filter()` in-memory.
