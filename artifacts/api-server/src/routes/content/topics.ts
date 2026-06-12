@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { topicsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import {
   CreateTopicBody,
   ListTopicsQueryParams,
@@ -15,20 +15,22 @@ router.get("/topics", async (req, res) => {
   const parsed = ListTopicsQueryParams.safeParse(req.query);
   const query = parsed.success ? parsed.data : {};
 
+  // ⚡ Bolt: Push query filters to the database using `where` and `and`.
+  // Avoids fetching the entire table into memory, eliminating O(N) data transfer overhead
+  // and improving response times.
+  const conditions = [];
+  if (query.niche) conditions.push(eq(topicsTable.niche, query.niche));
+  if (query.status) conditions.push(eq(topicsTable.status, query.status));
+
   let topics = db
     .select()
     .from(topicsTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(topicsTable.createdAt));
 
   const results = await topics;
 
-  const filtered = results.filter((t) => {
-    if (query.niche && t.niche !== query.niche) return false;
-    if (query.status && t.status !== query.status) return false;
-    return true;
-  });
-
-  res.json(filtered);
+  res.json(results);
 });
 
 router.post("/topics", async (req, res) => {
