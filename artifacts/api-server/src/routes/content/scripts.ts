@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { scriptsTable, topicsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import {
   CreateScriptBody,
   UpdateScriptBody,
@@ -17,18 +17,19 @@ router.get("/scripts", async (req, res) => {
   const parsed = ListScriptsQueryParams.safeParse(req.query);
   const query = parsed.success ? parsed.data : {};
 
+  const filters = [];
+  if (query.niche) filters.push(eq(scriptsTable.niche, query.niche));
+  if (query.status) filters.push(eq(scriptsTable.status, query.status));
+
+  // Optimization: Push list filters to the database using 'where' clauses instead of fetching all records
+  // and filtering in-memory with JS, saving significant memory and network overhead for large tables.
   const results = await db
     .select()
     .from(scriptsTable)
+    .where(and(...filters))
     .orderBy(desc(scriptsTable.createdAt));
 
-  const filtered = results.filter((s) => {
-    if (query.niche && s.niche !== query.niche) return false;
-    if (query.status && s.status !== query.status) return false;
-    return true;
-  });
-
-  res.json(filtered);
+  res.json(results);
 });
 
 router.post("/scripts", async (req, res) => {
