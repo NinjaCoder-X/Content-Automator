@@ -1,0 +1,3 @@
+## 2024-05-18 - Push query filters to DB instead of in-memory filtering
+**Learning:** In the `api-server` backend, there was an anti-pattern of fetching complete tables via Drizzle `db.select().from(table)` and applying JavaScript `.filter()` on the results in memory. This led to fetching potentially thousands of records from the database just to return a few matching ones, causing substantial data fetch overhead and memory consumption (effectively O(n) fetch time where n is total DB rows instead of O(k) where k is matching rows).
+**Action:** When implementing new GET endpoints with query parameters, always construct a `filters` array of Drizzle conditions (e.g., `eq`, `and`) and pass them to the `.where()` clause of the query to filter rows at the database level.
