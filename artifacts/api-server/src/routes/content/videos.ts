@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { videosTable, scriptsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import {
   CreateVideoBody,
   UpdateVideoBody,
@@ -17,18 +17,21 @@ router.get("/videos", async (req, res) => {
   const parsed = ListVideosQueryParams.safeParse(req.query);
   const query = parsed.success ? parsed.data : {};
 
+  // ⚡ Bolt Optimization: Push filters down to the database layer
+  // Why: Fetching all rows and filtering in-memory using .filter() is an anti-pattern.
+  // It causes excessive memory footprint, increases latency, and poses an OOM risk for large datasets.
+  // Impact: O(1) memory instead of O(N). Let DB do the heavy lifting.
+  const conditions = [];
+  if (query.status) conditions.push(eq(videosTable.status, query.status));
+  if (query.platform) conditions.push(eq(videosTable.platform, query.platform));
+
   const results = await db
     .select()
     .from(videosTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(videosTable.createdAt));
 
-  const filtered = results.filter((v) => {
-    if (query.status && v.status !== query.status) return false;
-    if (query.platform && v.platform !== query.platform) return false;
-    return true;
-  });
-
-  res.json(filtered);
+  res.json(results);
 });
 
 router.post("/videos", async (req, res) => {
