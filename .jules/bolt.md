@@ -1,0 +1,3 @@
+## 2024-06-25 - In-memory Filtering Anti-Pattern
+**Learning:** Found a pervasive anti-pattern in the backend API routes (e.g., `scripts.ts`, `topics.ts`, `videos.ts`) where the entire table was fetched using `db.select().from(table)` and then filtered in-memory via JavaScript `.filter()`. This will severely impact performance and cause OOM errors as the DB grows. Note that `stats.ts` is also currently aggregating stats by fetching full tables instead of using SQL aggregations.
+**Action:** Always push query filters down to the database using Drizzle's `where()` clause combined with `eq()`, `and()`, etc. In the future, we should also replace the in-memory aggregation in `stats.ts` with SQL `COUNT` and `GROUP BY` operations.
