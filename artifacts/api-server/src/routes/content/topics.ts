@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { topicsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import {
   CreateTopicBody,
   ListTopicsQueryParams,
@@ -15,20 +15,19 @@ router.get("/topics", async (req, res) => {
   const parsed = ListTopicsQueryParams.safeParse(req.query);
   const query = parsed.success ? parsed.data : {};
 
-  let topics = db
+  // Performance Optimization: Push filters down to the database using `where()`
+  // instead of fetching the whole table and using in-memory `.filter()`.
+  const filters = [];
+  if (query.niche) filters.push(eq(topicsTable.niche, query.niche));
+  if (query.status) filters.push(eq(topicsTable.status, query.status));
+
+  const results = await db
     .select()
     .from(topicsTable)
+    .where(filters.length > 0 ? and(...filters) : undefined)
     .orderBy(desc(topicsTable.createdAt));
 
-  const results = await topics;
-
-  const filtered = results.filter((t) => {
-    if (query.niche && t.niche !== query.niche) return false;
-    if (query.status && t.status !== query.status) return false;
-    return true;
-  });
-
-  res.json(filtered);
+  res.json(results);
 });
 
 router.post("/topics", async (req, res) => {
