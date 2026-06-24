@@ -1,0 +1,3 @@
+## 2024-06-24 - Database Aggregations for /stats
+**Learning:** The `/stats` endpoint in the API server was a significant performance bottleneck due to fetching entire tables (`topics`, `scripts`, `videos`) into Node.js memory just to calculate `.length` and filtered counts. This is an O(N) memory anti-pattern.
+**Action:** When calculating statistics or dashboard metrics, always use parallel SQL queries with Drizzle's `sql` helper to offload aggregation to the database (e.g., `count(*)`, `SUM(CASE WHEN...)`). This ensures O(1) memory usage in the application layer and significantly reduces database network traffic.
