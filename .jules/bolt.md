@@ -1,0 +1,3 @@
+## 2024-07-02 - Offloading Aggregations to Database
+**Learning:** Fetching full tables for in-memory aggregation (e.g., using `.filter().length`) is a major performance anti-pattern in this codebase. Furthermore, when using Drizzle ORM for conditional aggregations like `sql<number>\`cast(sum(case when ...))\``, the query returns `null` instead of `0` if no rows match, which can break expected type contracts.
+**Action:** Always offload computation to the database using Drizzle ORM's native SQL aggregation functions (`count()`, conditional `sum(case when...)`, and `.groupBy()`). When performing conditional sums, always wrap the result in `coalesce(..., 0)` to ensure a numeric fallback when no rows are matched.

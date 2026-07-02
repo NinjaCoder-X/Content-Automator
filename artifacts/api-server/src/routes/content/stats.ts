@@ -1,47 +1,93 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { topicsTable, scriptsTable, videosTable } from "@workspace/db";
-import { eq, desc, gte } from "drizzle-orm";
+import { eq, desc, gte, sql, count } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/stats", async (req, res) => {
-  const [topics, scripts, videos] = await Promise.all([
-    db.select().from(topicsTable),
-    db.select().from(scriptsTable),
-    db.select().from(videosTable),
-  ]);
-
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
+  // ⚡ Bolt: Offloading computations to the database using native SQL aggregations
+  // instead of fetching full tables and doing in-memory counting (e.g. `.length` / `.filter()`).
+  // This reduces memory overhead, avoids full table scans for stats, and significantly
+  // speeds up the request for large datasets. Coalesce is used for sums to ensure `0` fallback.
+
+  // Run all independent queries concurrently to minimize network latency round-trips
+  const [
+    [topicStats],
+    [scriptStats],
+    [videoStats],
+    topicsNicheRows,
+    scriptsNicheRows,
+    videosPlatformRows
+  ] = await Promise.all([
+    // 1. Get base counts and conditional aggregations for Topics
+    db.select({
+      total: count(),
+      recent: sql<number>`cast(coalesce(sum(case when ${topicsTable.createdAt} >= ${oneDayAgo.toISOString()} then 1 else 0 end), 0) as integer)`,
+    }).from(topicsTable),
+
+    // 2. Get base counts and conditional aggregations for Scripts
+    db.select({
+      total: count(),
+      recent: sql<number>`cast(coalesce(sum(case when ${scriptsTable.createdAt} >= ${oneDayAgo.toISOString()} then 1 else 0 end), 0) as integer)`,
+      approved: sql<number>`cast(coalesce(sum(case when ${scriptsTable.status} = 'approved' then 1 else 0 end), 0) as integer)`,
+    }).from(scriptsTable),
+
+    // 3. Get base counts and conditional aggregations for Videos
+    db.select({
+      total: count(),
+      published: sql<number>`cast(coalesce(sum(case when ${videosTable.status} = 'published' then 1 else 0 end), 0) as integer)`,
+      ready: sql<number>`cast(coalesce(sum(case when ${videosTable.status} = 'ready' then 1 else 0 end), 0) as integer)`,
+    }).from(videosTable),
+
+    // 4. Get group counts
+    db.select({
+      niche: topicsTable.niche,
+      count: count(),
+    }).from(topicsTable).groupBy(topicsTable.niche),
+
+    db.select({
+      niche: scriptsTable.niche,
+      count: count(),
+    }).from(scriptsTable).groupBy(scriptsTable.niche),
+
+    db.select({
+      platform: videosTable.platform,
+      count: count(),
+    }).from(videosTable).groupBy(videosTable.platform)
+  ]);
+
+  // Transform grouped query rows into Record<string, number> objects
   const topicsByNiche: Record<string, number> = {};
-  for (const t of topics) {
-    topicsByNiche[t.niche] = (topicsByNiche[t.niche] ?? 0) + 1;
+  for (const row of topicsNicheRows) {
+    topicsByNiche[row.niche] = row.count;
   }
 
   const scriptsByNiche: Record<string, number> = {};
-  for (const s of scripts) {
-    scriptsByNiche[s.niche] = (scriptsByNiche[s.niche] ?? 0) + 1;
+  for (const row of scriptsNicheRows) {
+    scriptsByNiche[row.niche] = row.count;
   }
 
   const videosByPlatform: Record<string, number> = {};
-  for (const v of videos) {
-    videosByPlatform[v.platform] = (videosByPlatform[v.platform] ?? 0) + 1;
+  for (const row of videosPlatformRows) {
+    videosByPlatform[row.platform] = row.count;
   }
 
   res.json({
-    totalTopics: topics.length,
-    totalScripts: scripts.length,
-    totalVideos: videos.length,
-    approvedScripts: scripts.filter((s) => s.status === "approved").length,
-    publishedVideos: videos.filter((v) => v.status === "published").length,
-    readyVideos: videos.filter((v) => v.status === "ready").length,
+    totalTopics: topicStats.total,
+    totalScripts: scriptStats.total,
+    totalVideos: videoStats.total,
+    approvedScripts: scriptStats.approved,
+    publishedVideos: videoStats.published,
+    readyVideos: videoStats.ready,
     topicsByNiche,
     scriptsByNiche,
     videosByPlatform,
-    recentTopicsCount: topics.filter((t) => t.createdAt >= oneDayAgo).length,
-    recentScriptsCount: scripts.filter((s) => s.createdAt >= oneDayAgo).length,
+    recentTopicsCount: topicStats.recent,
+    recentScriptsCount: scriptStats.recent,
   });
 });
 
