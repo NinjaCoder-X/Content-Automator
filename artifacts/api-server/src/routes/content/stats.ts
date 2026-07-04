@@ -1,47 +1,78 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { topicsTable, scriptsTable, videosTable } from "@workspace/db";
-import { eq, desc, gte } from "drizzle-orm";
+import { eq, desc, gte, count, sql } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/stats", async (req, res) => {
-  const [topics, scripts, videos] = await Promise.all([
-    db.select().from(topicsTable),
-    db.select().from(scriptsTable),
-    db.select().from(videosTable),
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+
+  const [
+    [topicsStat],
+    [scriptsStat],
+    [videosStat],
+    topicsByNicheData,
+    scriptsByNicheData,
+    videosByPlatformData,
+  ] = await Promise.all([
+    // Offload computation to DB to prevent in-memory processing of entire tables
+    db.select({
+      total: count(),
+      recent: sql<number>`cast(coalesce(sum(case when ${topicsTable.createdAt} >= ${oneDayAgo}::timestamp then 1 else 0 end), 0) as int)`,
+    }).from(topicsTable),
+    db.select({
+      total: count(),
+      recent: sql<number>`cast(coalesce(sum(case when ${scriptsTable.createdAt} >= ${oneDayAgo}::timestamp then 1 else 0 end), 0) as int)`,
+      approved: sql<number>`cast(coalesce(sum(case when ${scriptsTable.status} = 'approved' then 1 else 0 end), 0) as int)`,
+    }).from(scriptsTable),
+    db.select({
+      total: count(),
+      published: sql<number>`cast(coalesce(sum(case when ${videosTable.status} = 'published' then 1 else 0 end), 0) as int)`,
+      ready: sql<number>`cast(coalesce(sum(case when ${videosTable.status} = 'ready' then 1 else 0 end), 0) as int)`,
+    }).from(videosTable),
+    db.select({
+      niche: topicsTable.niche,
+      count: count(),
+    }).from(topicsTable).groupBy(topicsTable.niche),
+    db.select({
+      niche: scriptsTable.niche,
+      count: count(),
+    }).from(scriptsTable).groupBy(scriptsTable.niche),
+    db.select({
+      platform: videosTable.platform,
+      count: count(),
+    }).from(videosTable).groupBy(videosTable.platform),
   ]);
 
-  const now = new Date();
-  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const topicsByNiche = topicsByNicheData.reduce((acc, curr) => {
+    acc[curr.niche] = curr.count;
+    return acc;
+  }, {} as Record<string, number>);
 
-  const topicsByNiche: Record<string, number> = {};
-  for (const t of topics) {
-    topicsByNiche[t.niche] = (topicsByNiche[t.niche] ?? 0) + 1;
-  }
+  const scriptsByNiche = scriptsByNicheData.reduce((acc, curr) => {
+    acc[curr.niche] = curr.count;
+    return acc;
+  }, {} as Record<string, number>);
 
-  const scriptsByNiche: Record<string, number> = {};
-  for (const s of scripts) {
-    scriptsByNiche[s.niche] = (scriptsByNiche[s.niche] ?? 0) + 1;
-  }
-
-  const videosByPlatform: Record<string, number> = {};
-  for (const v of videos) {
-    videosByPlatform[v.platform] = (videosByPlatform[v.platform] ?? 0) + 1;
-  }
+  const videosByPlatform = videosByPlatformData.reduce((acc, curr) => {
+    acc[curr.platform] = curr.count;
+    return acc;
+  }, {} as Record<string, number>);
 
   res.json({
-    totalTopics: topics.length,
-    totalScripts: scripts.length,
-    totalVideos: videos.length,
-    approvedScripts: scripts.filter((s) => s.status === "approved").length,
-    publishedVideos: videos.filter((v) => v.status === "published").length,
-    readyVideos: videos.filter((v) => v.status === "ready").length,
+    totalTopics: topicsStat.total,
+    totalScripts: scriptsStat.total,
+    totalVideos: videosStat.total,
+    approvedScripts: scriptsStat.approved,
+    publishedVideos: videosStat.published,
+    readyVideos: videosStat.ready,
     topicsByNiche,
     scriptsByNiche,
     videosByPlatform,
-    recentTopicsCount: topics.filter((t) => t.createdAt >= oneDayAgo).length,
-    recentScriptsCount: scripts.filter((s) => s.createdAt >= oneDayAgo).length,
+    recentTopicsCount: topicsStat.recent,
+    recentScriptsCount: scriptsStat.recent,
   });
 });
 
