@@ -1,0 +1,3 @@
+## 2024-07-08 - Fetching full tables for in-memory aggregation is an anti-pattern
+**Learning:** Fetching full tables to memory and running `.filter()` or `.length` can create major performance bottlenecks in large datasets. Also, when executing Drizzle ORM SQL sum functions (like `sql<number>cast(sum(case when ...))`), we must always wrap it in `coalesce(..., 0)` to prevent the database from returning `null` when no rows match, ensuring accurate type matching for expected integer counts.
+**Action:** Always offload computation to the database using Drizzle ORM's native SQL aggregation functions (`count()`, conditional `SUM(CASE WHEN...)`, and `.groupBy()`). Ensure `coalesce` is used for conditional aggregation counts.
