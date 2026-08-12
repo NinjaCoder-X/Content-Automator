@@ -5,10 +5,11 @@ import { Video, Trash2, Upload, CheckCircle2, Clock, Zap, Loader2, Copy } from "
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { VideoCard } from "@/components/videos/VideoCard";
+import { VideoDetailsDialog } from "@/components/videos/VideoDetailsDialog";
 
 const PLATFORMS = ["instagram", "youtube", "facebook", "all"];
 
@@ -26,7 +27,7 @@ const PLATFORM_LABELS: Record<string, string> = {
   all: "All Platforms",
 };
 
-type VideoItem = {
+export type VideoItem = {
   id: number;
   scriptId: number;
   niche: string;
@@ -160,135 +161,29 @@ export default function VideosPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {videos.map((video) => {
-            const config = STATUS_CONFIG[video.status] ?? STATUS_CONFIG.queued;
-            return (
-              <div
-                key={video.id}
-                className="p-5 border border-border bg-card hover:border-primary/30 transition-colors cursor-pointer group"
-                onClick={() => setSelected(video as VideoItem)}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4 min-w-0">
-                    <div className="p-2 bg-secondary text-primary shrink-0">
-                      {config.icon}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm leading-tight">{video.title}</p>
-                      {video.caption && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{video.caption}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs uppercase tracking-wider bg-secondary px-2 py-0.5 text-muted-foreground">
-                          {video.niche}
-                        </span>
-                        <span className={cn("text-xs uppercase tracking-wider px-2 py-0.5 border", config.color)}>
-                          {config.label}
-                        </span>
-                        <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                          {PLATFORM_LABELS[video.platform] ?? video.platform}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {videos.map((video) => (
+            <VideoCard
+              key={video.id}
+              video={video as VideoItem}
+              onClick={() => setSelected(video as VideoItem)}
+              statusConfig={STATUS_CONFIG}
+              platformLabels={PLATFORM_LABELS}
+            />
+          ))}
         </div>
       )}
 
-      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        {selected && (
-          <DialogContent className="max-w-xl bg-card border-border max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="uppercase tracking-wider text-sm font-bold">{selected.title}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 mt-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs uppercase tracking-wider bg-secondary px-2 py-0.5 text-muted-foreground">{selected.niche}</span>
-                <span className={cn(
-                  "text-xs uppercase tracking-wider px-2 py-0.5 border",
-                  STATUS_CONFIG[selected.status]?.color ?? "bg-muted"
-                )}>{STATUS_CONFIG[selected.status]?.label ?? selected.status}</span>
-                <span className="text-xs text-muted-foreground uppercase">{PLATFORM_LABELS[selected.platform]}</span>
-              </div>
-
-              <div className="space-y-3">
-                {selected.caption && (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs uppercase tracking-widest text-muted-foreground">Caption</p>
-                      <button onClick={() => copyToClipboard(selected.caption, "Caption")} className="text-muted-foreground hover:text-foreground">
-                        <Copy className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <p className="text-sm bg-secondary p-3 leading-relaxed">{selected.caption}</p>
-                  </div>
-                )}
-
-                {selected.hashtags && (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs uppercase tracking-widest text-muted-foreground">Hashtags</p>
-                      <button onClick={() => copyToClipboard(selected.hashtags, "Hashtags")} className="text-muted-foreground hover:text-foreground">
-                        <Copy className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <p className="text-sm bg-secondary p-3 leading-relaxed text-primary">{selected.hashtags}</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3 pt-2 border-t border-border flex-wrap">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="uppercase text-xs tracking-wider"
-                  onClick={() => generateMetadata(selected)}
-                  disabled={generatingMetadata}
-                >
-                  {generatingMetadata ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Zap className="w-3 h-3 mr-1" />}
-                  AI Metadata
-                </Button>
-
-                {selected.status === "ready" && (
-                  <Button
-                    size="sm"
-                    className="uppercase text-xs tracking-wider"
-                    onClick={() => updateStatusMutation.mutate({ id: selected.id, status: "published" })}
-                    disabled={updateStatusMutation.isPending}
-                  >
-                    {updateStatusMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Upload className="w-3 h-3 mr-1" />}
-                    Mark Published
-                  </Button>
-                )}
-
-                {selected.status === "queued" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="uppercase text-xs tracking-wider"
-                    onClick={() => updateStatusMutation.mutate({ id: selected.id, status: "ready" })}
-                    disabled={updateStatusMutation.isPending}
-                  >
-                    {updateStatusMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <CheckCircle2 className="w-3 h-3 mr-1" />}
-                    Mark Ready
-                  </Button>
-                )}
-
-                <button
-                  onClick={() => deleteMutation.mutate(selected.id)}
-                  disabled={deleteMutation.isPending}
-                  className="ml-auto p-2 text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-          </DialogContent>
-        )}
-      </Dialog>
+      <VideoDetailsDialog
+        selected={selected}
+        onClose={() => setSelected(null)}
+        copyToClipboard={copyToClipboard}
+        generateMetadata={generateMetadata}
+        generatingMetadata={generatingMetadata}
+        updateStatusMutation={updateStatusMutation}
+        deleteMutation={deleteMutation}
+        statusConfig={STATUS_CONFIG}
+        platformLabels={PLATFORM_LABELS}
+      />
     </div>
   );
 }
