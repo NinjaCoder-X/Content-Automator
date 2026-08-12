@@ -17,7 +17,7 @@ export type PlaybackState = "idle" | "playing" | "ended";
  * - seq 0 arrives → played immediately, then check buffer
  * - seq 1 arrives → played immediately (seq 0 done), seq 2 now plays
  */
-class SequenceBuffer {
+export class SequenceBuffer {
   private pending = new Map<number, string[]>();
   private nextSeq = 0;
 
