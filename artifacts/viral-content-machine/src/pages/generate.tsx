@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Sparkles, ChevronRight, Loader2, CheckCircle2, RotateCcw, Activity, FileText } from "lucide-react";
+import { Sparkles, ChevronRight, Loader2, CheckCircle2, RotateCcw, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
