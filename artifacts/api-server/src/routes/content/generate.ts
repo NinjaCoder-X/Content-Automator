@@ -28,7 +28,13 @@ router.post("/generate-topics", async (req, res) => {
   }
 
   const { niche, count = 5 } = parsed.data;
-  const nichePrompt = NICHE_PROMPTS[niche] ?? niche;
+
+  if (!NICHE_PROMPTS[niche]) {
+    res.status(400).json({ error: "Invalid niche provided" });
+    return;
+  }
+
+  const nichePrompt = NICHE_PROMPTS[niche];
 
   const response = await openai.chat.completions.create({
     model: "gpt-5-mini",
@@ -88,6 +94,13 @@ router.post("/generate-script", async (req, res) => {
   }
 
   const { topicId, niche, title, hook } = parsed.data;
+
+  // Validate niche to prevent prompt injection
+  const allowedNiches = ["facts", "psychology", "money", "tech", "body", "dark"];
+  if (!allowedNiches.includes(niche)) {
+    res.status(400).json({ error: "Invalid niche provided" });
+    return;
+  }
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
