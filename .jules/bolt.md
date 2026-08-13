@@ -1,0 +1,3 @@
+## 2024-05-24 - [In-Memory Aggregations Anti-Pattern]
+**Learning:** Found a common performance anti-pattern where full database tables are fetched into application memory (e.g., `db.select().from(topicsTable)`) just to perform simple aggregations using `.filter().length` and in-memory object loops for grouping.
+**Action:** Always offload these aggregations to the database using Drizzle ORM's native SQL functions like `count()`, `sql<number>\`coalesce(cast(sum(case when ... then 1 else 0 end) as integer), 0)\`` for conditional counting, and `.groupBy()` to prevent memory exhaustion and reduce latency.
