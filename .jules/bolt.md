@@ -1,0 +1,3 @@
+## 2024-05-24 - [Avoid `.filter()` on Drizzle tables]
+**Learning:** The application is retrieving full tables (`db.select().from(...)`) into memory and running `.filter()` (e.g. in `stats.ts`, `videos.ts`, `scripts.ts`). This is an anti-pattern that leads to high memory usage and N+1 query like issues. We should use Drizzle's `where` and `sql` helpers to compute aggregates on the database side or filter rows on the DB directly.
+**Action:** Replace in-memory array `.filter()` aggregations with database queries utilizing conditional sums (`coalesce(sum(case when ...), 0)`) and standard Drizzle operators (`eq`, `and`, etc.) to offload work to the database. Always use `coalesce` so that empty result counts evaluate to `0` rather than `null`.
