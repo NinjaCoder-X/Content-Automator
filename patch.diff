@@ -1,0 +1,43 @@
+<<<<<<< SEARCH
+  const topicsByNiche: Record<string, number> = {};
+  for (const t of topicsGrouped) {
+    if (t.niche) {
+      topicsByNiche[t.niche] = t.count;
+    }
+  }
+
+  const scriptsByNiche: Record<string, number> = {};
+  for (const s of scriptsGrouped) {
+    if (s.niche) {
+      scriptsByNiche[s.niche] = s.count;
+    }
+  }
+
+  const videosByPlatform: Record<string, number> = {};
+  for (const v of videosGrouped) {
+    if (v.platform) {
+      videosByPlatform[v.platform] = v.count;
+    }
+  }
+=======
+  const topicsByNiche: Record<string, number> = {};
+  for (const t of topicsGrouped) {
+    if (t.niche != null) {
+      topicsByNiche[t.niche] = t.count;
+    }
+  }
+
+  const scriptsByNiche: Record<string, number> = {};
+  for (const s of scriptsGrouped) {
+    if (s.niche != null) {
+      scriptsByNiche[s.niche] = s.count;
+    }
+  }
+
+  const videosByPlatform: Record<string, number> = {};
+  for (const v of videosGrouped) {
+    if (v.platform != null) {
+      videosByPlatform[v.platform] = v.count;
+    }
+  }
+>>>>>>> REPLACE
