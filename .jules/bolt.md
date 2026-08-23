@@ -1,0 +1,3 @@
+## 2024-06-25 - Avoid In-Memory Aggregations & Filtering
+**Learning:** A known performance anti-pattern in the codebase is fetching full tables for in-memory aggregation (e.g., using `.filter().length`) or in-memory filtering.
+**Action:** Always offload computation to the database using Drizzle ORM's native SQL aggregation functions (`count()`, conditional `SUM(CASE WHEN...)`, and `.groupBy()`), or push query filters down to the database using `where` clauses (with `eq`, `and`, etc.) rather than fetching full tables and applying JavaScript `.filter()` in-memory. For conditional aggregations, always wrap the result in `coalesce(..., 0)` to prevent returning `null` when no rows match, ensuring accurate type matching for expected integer counts.

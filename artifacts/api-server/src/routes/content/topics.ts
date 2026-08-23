@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { topicsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import {
   CreateTopicBody,
   ListTopicsQueryParams,
@@ -15,20 +15,19 @@ router.get("/topics", async (req, res) => {
   const parsed = ListTopicsQueryParams.safeParse(req.query);
   const query = parsed.success ? parsed.data : {};
 
-  let topics = db
-    .select()
-    .from(topicsTable)
-    .orderBy(desc(topicsTable.createdAt));
+  // ⚡ Bolt: Offload filtering to database where clauses rather than in-memory filtering
+  const conditions = [];
+  if (query.niche) conditions.push(eq(topicsTable.niche, query.niche));
+  if (query.status) conditions.push(eq(topicsTable.status, query.status));
 
-  const results = await topics;
+  let dbQuery = db.select().from(topicsTable);
+  if (conditions.length > 0) {
+    dbQuery = dbQuery.where(and(...conditions)) as any;
+  }
 
-  const filtered = results.filter((t) => {
-    if (query.niche && t.niche !== query.niche) return false;
-    if (query.status && t.status !== query.status) return false;
-    return true;
-  });
+  const topics = await dbQuery.orderBy(desc(topicsTable.createdAt));
 
-  res.json(filtered);
+  res.json(topics);
 });
 
 router.post("/topics", async (req, res) => {
