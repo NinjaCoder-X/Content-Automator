@@ -1,0 +1,3 @@
+## 2024-05-24 - Database Aggregation Anti-Pattern
+**Learning:** The codebase has a recurring anti-pattern of fetching full tables into memory using `db.select().from(...)` just to perform in-memory aggregations via JavaScript (e.g., `.filter().length` or iterating to group counts). This causes severe performance degradation and memory bloat on large tables.
+**Action:** Always offload computation to the database using Drizzle ORM's native SQL aggregation functions, such as `count()`, `.groupBy()`, and conditional aggregation with `SUM(CASE WHEN...)`. When using `SUM()`, always wrap it in `coalesce(..., 0)` to prevent returning `null` when no rows match, ensuring accurate type matching.
