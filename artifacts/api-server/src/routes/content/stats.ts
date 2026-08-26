@@ -1,47 +1,85 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { topicsTable, scriptsTable, videosTable } from "@workspace/db";
-import { eq, desc, gte } from "drizzle-orm";
+import { eq, desc, gte, sql } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/stats", async (req, res) => {
-  const [topics, scripts, videos] = await Promise.all([
-    db.select().from(topicsTable),
-    db.select().from(scriptsTable),
-    db.select().from(videosTable),
-  ]);
-
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
+  // ⚡ Bolt Optimization: Replace in-memory aggregations (fetching full tables)
+  // with Drizzle ORM native SQL aggregations (count, sum with conditions, groupBy).
+  // This drastically reduces memory usage, prevents OOM errors, and decreases latency.
+  const [
+    [topicsAgg],
+    [scriptsAgg],
+    [videosAgg],
+    topicsNicheAgg,
+    scriptsNicheAgg,
+    videosPlatformAgg
+  ] = await Promise.all([
+    db.select({
+      total: sql<number>`coalesce(cast(count(*) as integer), 0)`,
+      recentCount: sql<number>`coalesce(cast(sum(case when ${topicsTable.createdAt} >= ${oneDayAgo} then 1 else 0 end) as integer), 0)`
+    }).from(topicsTable),
+
+    db.select({
+      total: sql<number>`coalesce(cast(count(*) as integer), 0)`,
+      approved: sql<number>`coalesce(cast(sum(case when ${scriptsTable.status} = 'approved' then 1 else 0 end) as integer), 0)`,
+      recentCount: sql<number>`coalesce(cast(sum(case when ${scriptsTable.createdAt} >= ${oneDayAgo} then 1 else 0 end) as integer), 0)`
+    }).from(scriptsTable),
+
+    db.select({
+      total: sql<number>`coalesce(cast(count(*) as integer), 0)`,
+      published: sql<number>`coalesce(cast(sum(case when ${videosTable.status} = 'published' then 1 else 0 end) as integer), 0)`,
+      ready: sql<number>`coalesce(cast(sum(case when ${videosTable.status} = 'ready' then 1 else 0 end) as integer), 0)`
+    }).from(videosTable),
+
+    db.select({
+      niche: topicsTable.niche,
+      count: sql<number>`cast(count(*) as integer)`
+    }).from(topicsTable).groupBy(topicsTable.niche),
+
+    db.select({
+      niche: scriptsTable.niche,
+      count: sql<number>`cast(count(*) as integer)`
+    }).from(scriptsTable).groupBy(scriptsTable.niche),
+
+    db.select({
+      platform: videosTable.platform,
+      count: sql<number>`cast(count(*) as integer)`
+    }).from(videosTable).groupBy(videosTable.platform)
+  ]);
+
   const topicsByNiche: Record<string, number> = {};
-  for (const t of topics) {
-    topicsByNiche[t.niche] = (topicsByNiche[t.niche] ?? 0) + 1;
+  for (const t of topicsNicheAgg) {
+    topicsByNiche[t.niche] = t.count;
   }
 
   const scriptsByNiche: Record<string, number> = {};
-  for (const s of scripts) {
-    scriptsByNiche[s.niche] = (scriptsByNiche[s.niche] ?? 0) + 1;
+  for (const s of scriptsNicheAgg) {
+    scriptsByNiche[s.niche] = s.count;
   }
 
   const videosByPlatform: Record<string, number> = {};
-  for (const v of videos) {
-    videosByPlatform[v.platform] = (videosByPlatform[v.platform] ?? 0) + 1;
+  for (const v of videosPlatformAgg) {
+    videosByPlatform[v.platform] = v.count;
   }
 
   res.json({
-    totalTopics: topics.length,
-    totalScripts: scripts.length,
-    totalVideos: videos.length,
-    approvedScripts: scripts.filter((s) => s.status === "approved").length,
-    publishedVideos: videos.filter((v) => v.status === "published").length,
-    readyVideos: videos.filter((v) => v.status === "ready").length,
+    totalTopics: topicsAgg?.total ?? 0,
+    totalScripts: scriptsAgg?.total ?? 0,
+    totalVideos: videosAgg?.total ?? 0,
+    approvedScripts: scriptsAgg?.approved ?? 0,
+    publishedVideos: videosAgg?.published ?? 0,
+    readyVideos: videosAgg?.ready ?? 0,
     topicsByNiche,
     scriptsByNiche,
     videosByPlatform,
-    recentTopicsCount: topics.filter((t) => t.createdAt >= oneDayAgo).length,
-    recentScriptsCount: scripts.filter((s) => s.createdAt >= oneDayAgo).length,
+    recentTopicsCount: topicsAgg?.recentCount ?? 0,
+    recentScriptsCount: scriptsAgg?.recentCount ?? 0,
   });
 });
 
