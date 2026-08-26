@@ -1,0 +1,3 @@
+## 2024-05-24 - [Avoid In-Memory Aggregations]
+**Learning:** Fetching full tables for in-memory aggregation (e.g., using `.filter().length`) is a major anti-pattern in the codebase and causes OOM and performance issues. Always offload computation to the database using Drizzle ORM's native SQL aggregation functions (`count()`, conditional `SUM(CASE WHEN...)`, and `.groupBy()`).
+**Action:** When performing counts or sums, use SQL aggregations. For conditional aggregations, always wrap the result in `coalesce(..., 0)` to prevent returning `null` when no rows match, ensuring accurate type matching for expected integer counts.
