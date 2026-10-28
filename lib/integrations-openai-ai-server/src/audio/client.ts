@@ -23,6 +23,24 @@ export const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+/** Extended audio response data present in gpt-audio models */
+export interface OpenAIAudioData {
+  id?: string;
+  expires_at?: number;
+  data?: string;
+  transcript?: string;
+}
+
+/** Extended chat completion message with audio field */
+export interface OpenAIAudioMessage extends Omit<OpenAI.Chat.Completions.ChatCompletionMessage, "audio"> {
+  audio?: OpenAIAudioData | null;
+}
+
+/** Extended chat completion chunk delta with audio field */
+export interface OpenAIAudioDelta extends Omit<OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta, "audio"> {
+  audio?: OpenAIAudioData | null;
+}
+
 export type AudioFormat = "wav" | "mp3" | "webm" | "mp4" | "ogg" | "unknown";
 
 /**
@@ -127,7 +145,8 @@ export async function voiceChat(
       ],
     }],
   });
-  const message = response.choices[0]?.message as any;
+  // Type assertion to OpenAIAudioMessage for gpt-audio models with audio field
+  const message = response.choices[0]?.message as OpenAIAudioMessage | undefined;
   const transcript = message?.audio?.transcript || message?.content || "";
   const audioData = message?.audio?.data ?? "";
   return {
@@ -158,12 +177,13 @@ export async function voiceChatStream(
 
   return (async function* () {
     for await (const chunk of stream) {
-      const delta = chunk.choices?.[0]?.delta as any;
+      // Type assertion to OpenAIAudioDelta for gpt-audio streaming response deltas
+      const delta = chunk.choices?.[0]?.delta as OpenAIAudioDelta | undefined;
       if (!delta) continue;
-      if (delta?.audio?.transcript) {
+      if (delta.audio?.transcript) {
         yield { type: "transcript", data: delta.audio.transcript };
       }
-      if (delta?.audio?.data) {
+      if (delta.audio?.data) {
         yield { type: "audio", data: delta.audio.data };
       }
     }
@@ -185,7 +205,9 @@ export async function textToSpeech(
       { role: "user", content: `Repeat the following text verbatim: ${text}` },
     ],
   });
-  const audioData = (response.choices[0]?.message as any)?.audio?.data ?? "";
+  // Type assertion to OpenAIAudioMessage for gpt-audio models
+  const message = response.choices[0]?.message as OpenAIAudioMessage | undefined;
+  const audioData = message?.audio?.data ?? "";
   return Buffer.from(audioData, "base64");
 }
 
@@ -207,9 +229,10 @@ export async function textToSpeechStream(
 
   return (async function* () {
     for await (const chunk of stream) {
-      const delta = chunk.choices?.[0]?.delta as any;
+      // Type assertion to OpenAIAudioDelta for gpt-audio streaming response deltas
+      const delta = chunk.choices?.[0]?.delta as OpenAIAudioDelta | undefined;
       if (!delta) continue;
-      if (delta?.audio?.data) {
+      if (delta.audio?.data) {
         yield delta.audio.data;
       }
     }
