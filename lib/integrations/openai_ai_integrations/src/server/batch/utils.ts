@@ -1,5 +1,5 @@
 import pLimit from "p-limit";
-import pRetry from "p-retry";
+import pRetry, { AbortError } from "p-retry";
 
 /**
  * Batch Processing Utilities
@@ -46,12 +46,22 @@ export interface BatchOptions {
  * Use this in custom error handling if needed.
  */
 export function isRateLimitError(error: unknown): boolean {
+  if (!error) return false;
+  const cause = (error as { cause?: unknown })?.cause;
   const errorMsg = error instanceof Error ? error.message : String(error);
+  const causeMsg =
+    cause instanceof Error
+      ? cause.message
+      : cause
+      ? String(cause)
+      : "";
+
+  const combined = `${errorMsg} ${causeMsg}`.toLowerCase();
   return (
     errorMsg.includes("429") ||
     errorMsg.includes("RATELIMIT_EXCEEDED") ||
-    errorMsg.toLowerCase().includes("quota") ||
-    errorMsg.toLowerCase().includes("rate limit")
+    combined.includes("quota") ||
+    combined.includes("rate limit")
   );
 }
 
@@ -93,9 +103,9 @@ export async function batchProcess<T, R>(
               throw error; // Rethrow to trigger p-retry
             }
             // For non-rate-limit errors, abort immediately
-            throw new pRetry.AbortError(
-              error instanceof Error ? error : new Error(String(error))
-            );
+            const message =
+              error instanceof Error ? error.message : String(error);
+            throw new AbortError(message);
           }
         },
         { retries, minTimeout, maxTimeout, factor: 2 }
@@ -134,30 +144,36 @@ export async function batchProcessWithSSE<T, R>(
 
     try {
       const result = await pRetry(
-        () => processor(item, index),
+        async () => {
+          try {
+            return await processor(item, index);
+          } catch (error: unknown) {
+            if (isRateLimitError(error)) {
+              throw error;
+            }
+            const message =
+              error instanceof Error ? error.message : String(error);
+            throw new AbortError(message);
+          }
+        },
         {
           retries,
           minTimeout,
           maxTimeout,
           factor: 2,
-          onFailedAttempt: (error) => {
-            if (!isRateLimitError(error)) {
-              throw new pRetry.AbortError(
-                error instanceof Error ? error : new Error(String(error))
-              );
-            }
-          },
         }
       );
       results.push(result);
       sendEvent({ type: "progress", index, result });
     } catch (error) {
       errors++;
-      results.push(undefined as R); // Placeholder for failed items
+      results.push(undefined as R);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       sendEvent({
         type: "progress",
         index,
-        error: error instanceof Error ? error.message : "Processing failed",
+        error: errorMessage || "Processing failed",
       });
     }
   }
