@@ -1,47 +1,92 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { topicsTable, scriptsTable, videosTable } from "@workspace/db";
-import { eq, desc, gte } from "drizzle-orm";
+import { desc, sql, count } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/stats", async (req, res) => {
-  const [topics, scripts, videos] = await Promise.all([
-    db.select().from(topicsTable),
-    db.select().from(scriptsTable),
-    db.select().from(videosTable),
-  ]);
-
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
+  // Performance Optimization:
+  // Instead of querying all table rows into Node.js memory and doing in-memory array filtering / aggregations,
+  // push down count, conditional sum, and group-by calculations to PostgreSQL via Drizzle ORM.
+  // This reduces memory overhead and network payload from O(N) full records down to O(1) aggregation summaries.
+  const [
+    [topicsSummary],
+    [scriptsSummary],
+    [videosSummary],
+    topicNiches,
+    scriptNiches,
+    videoPlatforms,
+  ] = await Promise.all([
+    db
+      .select({
+        total: count(),
+        recent: sql<number>`coalesce(cast(sum(case when ${topicsTable.createdAt} >= ${oneDayAgo} then 1 else 0 end) as int), 0)`,
+      })
+      .from(topicsTable),
+
+    db
+      .select({
+        total: count(),
+        approved: sql<number>`coalesce(cast(sum(case when ${scriptsTable.status} = 'approved' then 1 else 0 end) as int), 0)`,
+        recent: sql<number>`coalesce(cast(sum(case when ${scriptsTable.createdAt} >= ${oneDayAgo} then 1 else 0 end) as int), 0)`,
+      })
+      .from(scriptsTable),
+
+    db
+      .select({
+        total: count(),
+        published: sql<number>`coalesce(cast(sum(case when ${videosTable.status} = 'published' then 1 else 0 end) as int), 0)`,
+        ready: sql<number>`coalesce(cast(sum(case when ${videosTable.status} = 'ready' then 1 else 0 end) as int), 0)`,
+      })
+      .from(videosTable),
+
+    db
+      .select({ niche: topicsTable.niche, count: count() })
+      .from(topicsTable)
+      .groupBy(topicsTable.niche),
+
+    db
+      .select({ niche: scriptsTable.niche, count: count() })
+      .from(scriptsTable)
+      .groupBy(scriptsTable.niche),
+
+    db
+      .select({ platform: videosTable.platform, count: count() })
+      .from(videosTable)
+      .groupBy(videosTable.platform),
+  ]);
+
   const topicsByNiche: Record<string, number> = {};
-  for (const t of topics) {
-    topicsByNiche[t.niche] = (topicsByNiche[t.niche] ?? 0) + 1;
+  for (const row of topicNiches) {
+    topicsByNiche[row.niche] = Number(row.count);
   }
 
   const scriptsByNiche: Record<string, number> = {};
-  for (const s of scripts) {
-    scriptsByNiche[s.niche] = (scriptsByNiche[s.niche] ?? 0) + 1;
+  for (const row of scriptNiches) {
+    scriptsByNiche[row.niche] = Number(row.count);
   }
 
   const videosByPlatform: Record<string, number> = {};
-  for (const v of videos) {
-    videosByPlatform[v.platform] = (videosByPlatform[v.platform] ?? 0) + 1;
+  for (const row of videoPlatforms) {
+    videosByPlatform[row.platform] = Number(row.count);
   }
 
   res.json({
-    totalTopics: topics.length,
-    totalScripts: scripts.length,
-    totalVideos: videos.length,
-    approvedScripts: scripts.filter((s) => s.status === "approved").length,
-    publishedVideos: videos.filter((v) => v.status === "published").length,
-    readyVideos: videos.filter((v) => v.status === "ready").length,
+    totalTopics: Number(topicsSummary?.total ?? 0),
+    totalScripts: Number(scriptsSummary?.total ?? 0),
+    totalVideos: Number(videosSummary?.total ?? 0),
+    approvedScripts: Number(scriptsSummary?.approved ?? 0),
+    publishedVideos: Number(videosSummary?.published ?? 0),
+    readyVideos: Number(videosSummary?.ready ?? 0),
     topicsByNiche,
     scriptsByNiche,
     videosByPlatform,
-    recentTopicsCount: topics.filter((t) => t.createdAt >= oneDayAgo).length,
-    recentScriptsCount: scripts.filter((s) => s.createdAt >= oneDayAgo).length,
+    recentTopicsCount: Number(topicsSummary?.recent ?? 0),
+    recentScriptsCount: Number(scriptsSummary?.recent ?? 0),
   });
 });
 
