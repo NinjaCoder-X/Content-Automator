@@ -67,17 +67,26 @@ ONLY return the JSON array, no other text.`,
     topicList = [];
   }
 
-  const insertedTopics = await Promise.all(
-    topicList.map((t) =>
-      db
-        .insert(topicsTable)
-        .values({ niche, title: t.title, hook: t.hook, status: "pending" })
-        .returning()
-        .then((rows) => rows[0])
-    )
-  );
+  // Performance optimization: Bulk insert all generated topics in a single query
+  // instead of N individual INSERT queries to eliminate query round-trip overhead.
+  if (topicList.length === 0) {
+    res.status(201).json([]);
+    return;
+  }
 
-  res.status(201).json(insertedTopics.filter(Boolean));
+  const insertedTopics = await db
+    .insert(topicsTable)
+    .values(
+      topicList.map((t) => ({
+        niche,
+        title: t.title,
+        hook: t.hook,
+        status: "pending" as const,
+      }))
+    )
+    .returning();
+
+  res.status(201).json(insertedTopics);
 });
 
 router.post("/generate-script", async (req, res) => {
