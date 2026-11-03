@@ -12,13 +12,38 @@ import {
 const router = Router();
 
 const NICHE_PROMPTS: Record<string, string> = {
-  facts: "mind-blowing scientific or historical facts that most people don't know",
-  psychology: "psychological tricks, cognitive biases, or manipulation tactics that reveal how the human mind works",
-  money: "financial secrets, wealth-building tricks, or shocking money facts that banks don't want you to know",
+  facts:
+    "mind-blowing scientific or historical facts that most people don't know",
+  psychology:
+    "psychological tricks, cognitive biases, or manipulation tactics that reveal how the human mind works",
+  money:
+    "financial secrets, wealth-building tricks, or shocking money facts that banks don't want you to know",
   tech: "tech secrets, hidden features, or shocking truths about technology and social media",
   body: "surprising facts about the human body, brain, or biology",
   dark: "dark truths about society, history, or human nature that most people prefer to ignore",
 };
+
+/**
+ * Sanitizes user input to mitigate prompt injection risks by enforcing length limits,
+ * stripping control characters, normalizing whitespace, and removing prompt escaping tokens.
+ */
+export function sanitizePromptInput(input: string, maxLength = 200): string {
+  if (typeof input !== "string") {
+    return "";
+  }
+  return (
+    input
+      // Strip control characters and non-printable characters
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+      // Normalize newlines and tabs to standard spaces to prevent breaking out of delimiter blocks
+      .replace(/[\r\n\t]+/g, " ")
+      // Remove quotes/backticks that could be used to break out of delimiters
+      .replace(/["`]/g, "'")
+      // Trim and enforce length limit
+      .trim()
+      .slice(0, maxLength)
+  );
+}
 
 router.post("/generate-topics", async (req, res) => {
   const parsed = GenerateTopicsBody.safeParse(req.body);
@@ -73,8 +98,8 @@ ONLY return the JSON array, no other text.`,
         .insert(topicsTable)
         .values({ niche, title: t.title, hook: t.hook, status: "pending" })
         .returning()
-        .then((rows) => rows[0])
-    )
+        .then((rows) => rows[0]),
+    ),
   );
 
   res.status(201).json(insertedTopics.filter(Boolean));
@@ -88,6 +113,11 @@ router.post("/generate-script", async (req, res) => {
   }
 
   const { topicId, niche, title, hook } = parsed.data;
+
+  // Sanitize user-provided fields to protect against prompt injection
+  const safeTitle = sanitizePromptInput(title, 200);
+  const safeHook = sanitizePromptInput(hook, 200);
+  const safeNiche = sanitizePromptInput(niche, 50);
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -103,10 +133,10 @@ Script format rules:
 
 Keep total script under 150 words. Use simple, powerful language.`;
 
-  const userPrompt = `Write a viral script for a reel about: "${title}"
+  const userPrompt = `Write a viral script for a reel about: "${safeTitle}"
 
-Opening hook: "${hook}"
-Niche: ${niche}
+Opening hook: "${safeHook}"
+Niche: ${safeNiche}
 
 Return ONLY a JSON object (no markdown, no code blocks) with these exact fields:
 {
@@ -178,11 +208,11 @@ Return ONLY a JSON object (no markdown, no code blocks) with these exact fields:
     }
 
     res.write(
-      `data: ${JSON.stringify({ done: true, scriptId: script?.id, script })}\n\n`
+      `data: ${JSON.stringify({ done: true, scriptId: script?.id, script })}\n\n`,
     );
   } catch (err) {
     res.write(
-      `data: ${JSON.stringify({ error: "Script generation failed" })}\n\n`
+      `data: ${JSON.stringify({ error: "Script generation failed" })}\n\n`,
     );
   } finally {
     res.end();
